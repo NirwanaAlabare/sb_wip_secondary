@@ -10,7 +10,7 @@
 @endsection
 
 @section('content')
-    @livewire('defect-in-out')
+    @livewire('sewing-secondary-in')
 @endsection
 
 @section('custom-script')
@@ -24,8 +24,8 @@
         });
 
         Livewire.on('loadingStart', () => {
-            if (document.getElementById('loading-defect-in-out')) {
-                $('#loading-defect-in-out').removeClass('hidden');
+            if (document.getElementById('loading-sewing-secondary-in-out')) {
+                $('#loading-sewing-secondary-in-out').removeClass('hidden');
             }
         });
 

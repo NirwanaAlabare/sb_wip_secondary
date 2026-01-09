@@ -5,7 +5,7 @@
             <div class="loading"></div>
         </div>
     </div>
-    <div class="loading-container-fullscreen hidden" id="loading-defect-in-out">
+    <div class="loading-container-fullscreen hidden" id="loading-sewing-secondary-in-out">
         <div class="loading-container">
             <div class="loading"></div>
         </div>
@@ -17,7 +17,7 @@
                 <button type="button" class="btn btn-sm btn-defect {{ $mode == "in" ? "active" : "" }}" {{ $mode == "in" ? "disabled" : "" }} id="button-in">IN</button>
             </div>
             <div class="d-flex justify-content-end w-50">
-                <select class="form-select select2 w-auto" name="secondaries" id="secondaries">
+                <select class="form-select select2 w-auto" name="secondaries" id="secondaries" wire>
                     <option value="">Secondary 1</option>
                     <option value="">Secondary 2</option>
                 </select>
@@ -33,7 +33,7 @@
                         </h5>
                         <div class="d-flex align-items-center">
                             <h5 class="px-3 mb-0 text-light" id="total-defect-in" wire:ignore>Total : <b>0</b></h5>
-                            <button class="btn btn-defect float-end" wire:click="refreshComponent()" onclick="reloadDefectInListTable()">
+                            <button class="btn btn-defect float-end" wire:click="refreshComponent()" onclick="reloadSewingSecondaryInListTable()">
                                 <i class="fa-solid fa-rotate"></i>
                             </button>
                         </div>
@@ -42,7 +42,7 @@
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-4" wire:ignore>
-                            <input type="text" class="qty-input border h-100" id="scannedItemDefectIn" name="scannedItemDefectIn">
+                            <input type="text" class="qty-input border h-100" id="scannedSecondaryIn" name="scannedSecondaryIn">
                         </div>
                         <div class="col-md-8">
                             <div class="row g-3">
@@ -98,7 +98,7 @@
                         <div class="d-flex align-items-center">
                             <h5 class="px-3 mb-0 text-light">Total : <b>{{ $totalDefectInOut }}</b></h5>
                             <button class="btn btn-defect float-end" wire:click="refreshComponent()"
-                                onclick="defectInOutReload()">
+                                onclick="secondaryInOutReload()">
                                 <i class="fa-solid fa-rotate"></i>
                             </button>
                         </div>
@@ -110,12 +110,12 @@
                             <div class="d-flex align-items-end gap-3 mb-3">
                                 <div>
                                     <label class="form-label">From</label>
-                                    <input type="date" class="form-control" value="{{ date("Y-m-d", strtotime("-7 days")) }}" id="dateFrom" wire:model="defectInOutFrom" onchange="defectInOutReload()">
+                                    <input type="date" class="form-control" value="{{ date("Y-m-d", strtotime("-7 days")) }}" id="dateFrom" wire:model="secondaryInOutFrom" onchange="secondaryInOutReload()">
                                 </div>
                                 <span class="mb-2">-</span>
                                 <div>
                                     <label class="form-label">To</label>
-                                    <input type="date" class="form-control" value="{{ date("Y-m-d") }}" id="dateTo" wire:model="defectInOutTo" onchange="defectInOutReload()">
+                                    <input type="date" class="form-control" value="{{ date("Y-m-d") }}" id="dateTo" wire:model="secondaryInOutTo" onchange="secondaryInOutReload()">
                                 </div>
                             </div>
                             <div class="mb-3" wire:ignore>
@@ -123,7 +123,7 @@
                             </div>
                         </div>
                         <div class="table-responsive" wire:ignore>
-                            <table class="table table-bordered w-100" id="defect-in-out-table">
+                            <table class="table table-bordered w-100" id="secondary-in-out-table">
                                 <thead>
                                     <tr>
                                         <th>Action</th>
@@ -143,7 +143,7 @@
     </div>
 
     {{-- SECONDARY SEWING IN SUM MODAL --}}
-    <div class="modal" tabindex="-1" id="defect-in-out-modal" wire:ignore>
+    <div class="modal" tabindex="-1" id="secondary-in-out-modal" wire:ignore>
         <div class="modal-dialog modal-dialog-scrollable modal-fullscreen">
             <div class="modal-content">
                 <div class="modal-header bg-sb text-light fw-bold">
@@ -155,14 +155,14 @@
                         <div class="col-md-3">
                             <div class="mb-3">
                                 <label class="form-label">Tanggal</label>
-                                <input type="text" class="form-control" id="defectInOutDetailDate" readonly>
+                                <input type="text" class="form-control" id="secondaryInOutDetailDate" readonly>
                             </div>
                         </div>
                         <div class="col-md-3">
                             <div class="mb-3">
                                 <label class="form-label">Line</label>
-                                <select class="form-select select2-defect-in-out-modal" id="defectInOutDetailLine"
-                                    onchange="defectInOutDetailReload()">
+                                <select class="form-select select2-secondary-in-out-modal" id="secondaryInOutDetailLine"
+                                    onchange="secondaryInOutDetailReload()">
                                     <option value="" selected>All Line</option>
                                     @foreach ($lines as $line)
                                         <option value="{{ $line->username }}">{{ str_replace("_", " ", $line->username) }}
@@ -174,8 +174,8 @@
                         <div class="col-md-3">
                             <div class="mb-3">
                                 <label class="form-label">Department</label>
-                                <select class="form-select select2-defect-in-out-modal" id="defectInOutDetailDepartment"
-                                    onchange="defectInOutDetailReload()">
+                                <select class="form-select select2-secondary-in-out-modal" id="secondaryInOutDetailDepartment"
+                                    onchange="secondaryInOutDetailReload()">
                                     <option value="">All Department</option>
                                     <option value="qc">QC</option>
                                     {{-- <option value="qcf">QC FINISHING</option> --}}
@@ -187,29 +187,29 @@
                             <div class="row g-1 mb-3">
                                 <div class="col-md-4">
                                     <label class="form-label fw-bold">IN</label>
-                                    <input type="text" class="form-control" id="defectInOutDetailIn" readonly>
+                                    <input type="text" class="form-control" id="secondaryInOutDetailIn" readonly>
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label fw-bold">OUTPUT</label>
-                                    <input type="text" class="form-control" id="defectInOutDetailOut" readonly>
+                                    <input type="text" class="form-control" id="secondaryInOutDetailOut" readonly>
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label fw-bold">DEFECT</label>
-                                    <input type="text" class="form-control" id="defectInOutDetailDefect" readonly>
+                                    <input type="text" class="form-control" id="secondaryInOutDetailDefect" readonly>
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label fw-bold">REJECT</label>
-                                    <input type="text" class="form-control" id="defectInOutDetailReject" readonly>
+                                    <input type="text" class="form-control" id="secondaryInOutDetailReject" readonly>
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label fw-bold">WIP</label>
-                                    <input type="text" class="form-control" id="defectInOutDetailProcess" readonly>
+                                    <input type="text" class="form-control" id="secondaryInOutDetailProcess" readonly>
                                 </div>
                             </div>
                         </div>
                         <div class="col-md-12">
                             <div class="table-responsive">
-                                <table class="table table-bordered w-100" id="defect-in-out-detail-table">
+                                <table class="table table-bordered w-100" id="secondary-in-out-detail-table">
                                     <thead>
                                         <tr>
                                             <th>Time IN</th>
@@ -254,7 +254,7 @@
 
     <script>
         document.addEventListener("DOMContentLoaded", async function () {
-            document.getElementById('scannedItemDefectIn').focus();
+            document.getElementById('scannedItemSecondaryIn').focus();
 
             $('.select2').select2({
                 theme: "bootstrap-5",
@@ -262,11 +262,11 @@
                 placeholder: $(this).data('placeholder'),
             });
 
-            $('.select2-defect-in-out-modal').select2({
+            $('.select2-secondary-in-out-modal').select2({
                 theme: "bootstrap-5",
                 width: $(this).data('width') ? $(this).data('width') : $(this).hasClass('w-100') ? '100%' : 'style',
                 placeholder: $(this).data('placeholder'),
-                dropdownParent: $('#defect-in-out-modal')
+                dropdownParent: $('#secondary-in-out-modal')
             });
 
             $('#select-defect-in-line').on('change', function (e) {
@@ -495,7 +495,7 @@
             $('#total-defect-in b').text(totalEntries);
         });
 
-        function reloadDefectInListTable() {
+        function reloadSecondaryInListTable() {
             $("#defect-in-list-table").DataTable().ajax.reload(() => {
                 var info = $("#defect-in-list-table").DataTable().page.info();
                 var totalEntries = info.recordsDisplay;
@@ -503,26 +503,26 @@
             });
         }
 
-        function submitDefectIn() {
+        function submitSecondaryIn() {
             document.getElementById("loading").classList.remove("d-none");
 
             $.ajax({
                 type: "post",
                 url: "{{ route('submit-defect-in') }}",
                 data: {
-                    scannedDefectIn: $("#scannedItemDefectIn").val(),
+                    scannedDefectIn: $("#scannedItemSecondaryIn").val(),
                     defectInOutputType: $("#defect-in-output-type").val(),
                 },
                 dataType: "json",
                 success: function (response) {
                     document.getElementById("loading").classList.add("d-none");
 
-                    $("#scannedItemDefectIn").focus();
+                    $("#scannedItemSecondaryIn").focus();
 
                     if (response) {
                         showNotification(response.status, response.message);
 
-                        reloadDefectInListTable();
+                        reloadSecondaryInListTable();
                     }
                 },
                 error: function (jqXHR) {
@@ -533,161 +533,13 @@
             });
         }
 
-        var scannedItemDefectIn = document.getElementById("scannedItemDefectIn");
-        scannedItemDefectIn.addEventListener("change", async function () {
+        var scannedItemSecondaryIn = document.getElementById("scannedItemSecondaryIn");
+        scannedItemSecondaryIn.addEventListener("change", async function () {
             @this.scannedDefectIn = this.value;
 
             // submit
-            // @this.submitDefectIn();
-            submitDefectIn();
-
-            this.value = '';
-        });
-
-        // Defect Out List
-        let defectOutListTable = $("#defect-out-list-table").DataTable({
-            serverSide: true,
-            processing: true,
-            ordering: false,
-            searching: false,
-            paging: true,
-            ajax: {
-                url: '{{ route('get-defect-out-list') }}',
-                dataType: 'json',
-                data: function (d) {
-                    d.defectOutOutputType = $("#defect-out-output-type").val();
-                    d.defectOutSearch = $("#defect-out-search").val();
-                    d.defectOutLine = $("#defect-out-line").val();
-                    d.defectOutFilterKode = $("#defectOutFilterKode").val();
-                    d.defectOutFilterWaktu = $("#defectOutFilterWaktu").val();
-                    d.defectOutFilterLine = $("#defectOutFilterLine").val();
-                    d.defectOutFilterMasterPlan = $("#defectOutFilterMasterPlan").val();
-                    d.defectOutFilterSize = $("#defectOutFilterSize").val();
-                    d.defectOutFilterType = $("#defectOutFilterType").val();
-                }
-            },
-            columns: [
-                {
-                    data: null,
-                },
-                {
-                    data: 'kode_numbering',
-                },
-                {
-                    data: 'defect_time',
-                },
-                {
-                    data: 'sewing_line',
-                },
-                {
-                    data: 'ws',
-                },
-                {
-                    data: 'size',
-                },
-                {
-                    data: 'defect_type',
-                },
-                {
-                    data: 'defect_qty',
-                },
-                {
-                    data: 'output_type',
-                },
-            ],
-            columnDefs: [
-                // {
-                //     targets: [0],
-                //     className: "text-nowrap text-center align-middle",
-                //     render: (data, type, row, meta) => {
-                //         return meta.row+1;
-                //     }
-                // },
-                {
-                    targets: [4],
-                    className: "text-nowrap text-center align-middle",
-                    render: (data, type, row, meta) => {
-                        return row.ws + "<br>" + row.style + "<br>" + row.color;
-                    }
-                },
-                {
-                    targets: [8],
-                    className: "text-nowrap text-center align-middle",
-                    render: (data, type, row, meta) => {
-                        let textColor = "";
-                        if (data == "packing") {
-                            textColor = "text-success";
-                        } else {
-                            textColor = "text-danger";
-                        }
-                        return "<span class='fw-bold " + textColor + "'>" + (data && data == "packing" ? "finishing" : data).toUpperCase() + "</span>";
-                    }
-                },
-                {
-                    targets: "_all",
-                    className: "text-nowrap text-center align-middle"
-                },
-            ],
-            rowCallback: function (row, data, iDisplayIndex) {
-                var info = this.api().page.info();
-                var page = info.page;
-                var length = info.length;
-                var index = (page * length + (iDisplayIndex + 1));
-                $('td:eq(0)', row).html(index); // Assuming the first column is for the index
-            }
-        });
-
-        $("#defect-out-list-table").DataTable().on('draw.dt', function (e, settings, json, xhr) {
-            var info = $("#defect-out-list-table").DataTable().page.info();
-            var totalEntries = info.recordsDisplay;
-            $('#total-defect-out b').text(totalEntries);
-        });
-
-        function reloadDefectOutListTable() {
-            $("#defect-out-list-table").DataTable().ajax.reload(() => {
-                var info = $("#defect-out-list-table").DataTable().page.info();
-                var totalEntries = info.recordsDisplay;
-                $('#total-defect-out b').text(totalEntries);
-            });
-        }
-
-        function submitDefectOut() {
-            document.getElementById("loading").classList.remove("d-none");
-
-            $.ajax({
-                type: "post",
-                url: "{{ route('submit-defect-out') }}",
-                data: {
-                    scannedDefectOut: $("#scannedItemDefectOut").val(),
-                    defectOutOutputType: $("#defect-out-output-type").val(),
-                },
-                dataType: "json",
-                success: function (response) {
-                    document.getElementById("loading").classList.add("d-none");
-
-                    $("#scannedItemDefectOut").focus();
-
-                    if (response) {
-                        showNotification(response.status, response.message);
-
-                        reloadDefectOutListTable();
-                    }
-                },
-                error: function (jqXHR) {
-                    document.getElementById("loading").classList.add("d-none");
-
-                    console.error(jqXHR);
-                }
-            });
-        }
-
-        var scannedItemDefectOut = document.getElementById("scannedItemDefectOut");
-        scannedItemDefectOut.addEventListener("change", async function () {
-            @this.scannedDefectOut = this.value;
-
-            // submit
-            // @this.submitDefectOut();
-            submitDefectOut();
+            // @this.submitSecondaryIn();
+            submitSecondaryIn();
 
             this.value = '';
         });
@@ -697,15 +549,10 @@
             console.log(mode);
 
             if (mode == "in") {
-                document.getElementById('scannedItemDefectIn').focus();
+                document.getElementById('scannedItemSecondaryIn').focus();
                 document.getElementById('button-out').disabled = false;
 
-                reloadDefectInListTable();
-            } else if (mode == "out") {
-                document.getElementById('scannedItemDefectOut').focus()
-                document.getElementById('button-in').disabled = false;
-
-                reloadDefectOutListTable();
+                reloadSecondaryInListTable();
             }
         });
 
@@ -781,128 +628,6 @@
             });
         }
 
-        function getDefectType(type) {
-            if (type != "in" && type != "out") {
-                type = 'in';
-            }
-            $.ajax({
-                url: "{{ route("get-defect-type") }}",
-                method: "GET",
-                data: {
-                    date: $("#defect-" + type + "-date").val(),
-                    line: $("#select-defect-" + type + "-line").val(),
-                    master_plan: $("#select-defect-" + type + "-master-plan").val(),
-                    size: $("#select-defect-" + type + "-size").val(),
-                    defect_area: $("#select-defect-" + type + "-area").val(),
-                },
-                success: function (res) {
-                    document.getElementById("select-defect-" + type + "-type").innerHTML = "";
-
-                    let selectElement = document.getElementById("select-defect-" + type + "-type")
-
-                    let option = document.createElement("option");
-                    option.value = "";
-                    option.innerText = "All Defect Type";
-                    selectElement.appendChild(option);
-
-                    if (res && res.length > 0) {
-                        res.forEach(item => {
-                            let option = document.createElement("option");
-                            option.value = item.id;
-                            option.innerText = item.defect_type + ' - ' + item.defect_qty;
-
-                            selectElement.appendChild(option);
-                        });
-                    }
-                }
-            });
-        }
-
-        function getDefectArea(type) {
-            if (type != "in" && type != "out") {
-                type = 'in';
-            }
-            $.ajax({
-                url: "{{ route("get-defect-area") }}",
-                method: "GET",
-                data: {
-                    date: $("#defect-" + type + "-date").val(),
-                    line: $("#select-defect-" + type + "-line").val(),
-                    master_plan: $("#select-defect-" + type + "-master-plan").val(),
-                    size: $("#select-defect-" + type + "-size").val(),
-                    defect_type: $("#select-defect-" + type + "-type").val(),
-                },
-                success: function (res) {
-                    document.getElementById("select-defect-" + type + "-area").innerHTML = "";
-
-                    let selectElement = document.getElementById("select-defect-" + type + "-area");
-
-                    let option = document.createElement("option");
-                    option.value = "";
-                    option.innerText = "All Defect Area";
-                    selectElement.appendChild(option);
-
-                    if (res && res.length > 0) {
-                        res.forEach(item => {
-                            let option = document.createElement("option");
-                            option.value = item.id;
-                            option.innerText = item.defect_area + ' - ' + item.defect_qty;
-
-                            selectElement.appendChild(option);
-                        });
-                    }
-                }
-            });
-        }
-
-        function defectInSelectAll(element) {
-            if (element.checked) {
-                Livewire.emit("loadingStart");
-
-                @this.selectAllDefectIn();
-            } else {
-                Livewire.emit("loadingStart");
-
-                @this.unselectAllDefectIn();
-            }
-        }
-
-        // $('#defect-in-select-all').on('change', function (e) {
-        //     if (this.checked) {
-        //         Livewire.emit("loadingStart");
-
-        //         @this.selectAllDefectIn();
-        //     } else {
-        //         Livewire.emit("loadingStart");
-
-        //         @this.unselectAllDefectIn();
-        //     }
-        // });
-
-        function defectOutSelectAll(element) {
-            if (element.checked) {
-                Livewire.emit("loadingStart");
-
-                @this.selectAllDefectOut();
-            } else {
-                Livewire.emit("loadingStart");
-
-                @this.unselectAllDefectOut();
-            }
-        }
-
-        // $('#defect-out-select-all').on('change', function (e) {
-        //     if (this.checked) {
-        //         Livewire.emit("loadingStart");
-
-        //         @this.selectAllDefectOut("out");
-        //     } else {
-        //         Livewire.emit("loadingStart");
-
-        //         @this.unselectAllDefectOut("out");
-        //     }
-        // });
-
         function defectInCheck(element) {
             Livewire.emit("loadingStart");
 
@@ -959,7 +684,7 @@
             Livewire.emit('hideDefectAreaImageClear');
         }
 
-        let defectInOutDatatable = $("#defect-in-out-table").DataTable({
+        let secondaryInOutDatatable = $("#secondary-in-out-table").DataTable({
             serverSide: true,
             processing: true,
             ordering: false,
@@ -993,7 +718,7 @@
                 {
                     targets: [0],
                     render: (data, type, row, meta) => {
-                        return `<button type='button' class='btn btn-sb-secondary btn-sm' onclick='getDefectInOutDetail("` + data + `")'><i class='fa fa-search'></i></button>`
+                        return `<button type='button' class='btn btn-sb-secondary btn-sm' onclick='getSecondaryInOutDetail("` + data + `")'><i class='fa fa-search'></i></button>`
                     }
                 },
                 {
@@ -1003,11 +728,11 @@
             ],
         });
 
-        function defectInOutReload() {
-            $("#defect-in-out-table").DataTable().ajax.reload();
+        function secondaryInOutReload() {
+            $("#secondary-in-out-table").DataTable().ajax.reload();
         }
 
-        let defectInOutDetailDatatable = $("#defect-in-out-detail-table").DataTable({
+        let secondaryInOutDetailDatatable = $("#secondary-in-out-detail-table").DataTable({
             serverSide: true,
             processing: true,
             ordering: false,
@@ -1015,8 +740,8 @@
             ajax: {
                 url: '{{ route('get-defect-in-out-detail') }}',
                 data: function (d) {
-                    d.tanggal = $("#defectInOutDetailDate").val();
-                    d.line = $("#defectInOutDetailLine").val();
+                    d.tanggal = $("#secondaryInOutDetailDate").val();
+                    d.line = $("#secondaryInOutDetailLine").val();
                     d.departemen = $("#defectInOutDetailDepartment").val();
                 },
                 dataType: 'json',
@@ -1029,13 +754,10 @@
                     data: 'time_out',
                 },
                 {
-                    data: 'sewing_line',
-                },
-                {
-                    data: 'output_type',
-                },
-                {
                     data: 'kode_numbering',
+                },
+                {
+                    data: 'sewing_line',
                 },
                 {
                     data: 'no_ws',
@@ -1050,6 +772,9 @@
                     data: 'size',
                 },
                 {
+                    data: 'status',
+                },
+                {
                     data: 'defect_type',
                 },
                 {
@@ -1059,42 +784,25 @@
                     data: 'gambar',
                 },
                 {
-                    data: 'status',
+                    data: 'user_in',
+                },
+                {
+                    data: 'user_out',
                 },
             ],
             columnDefs: [
                 {
                     targets: [2],
+                    className: "disabled"
+                },
+                {
+                    targets: [3],
                     render: (data, type, row, meta) => {
                         return data ? data.replace("_", " ").toUpperCase() : '-';
                     }
                 },
                 {
-                    targets: [3],
-                    render: (data, type, row, meta) => {
-                        let textColor = '';
-
-                        if (data == "packing") {
-                            textColor = "text-success";
-                        } else {
-                            textColor = "text-danger";
-                        }
-
-                        return `<span class="` + textColor + ` fw-bold">` + (data ? (data == "packing" ? "FINISHING" : data.toUpperCase()) : '-') + `</span>`;
-                    }
-                },
-                {
-                    targets: [4],
-                    className: "disabled"
-                },
-                {
-                    targets: [11],
-                    render: (data, type, row, meta) => {
-                        return `<button class="btn btn-defect" onclick="onShowDefectAreaImage('` + row.gambar + `', ` + row.defect_area_x + `, ` + row.defect_area_y + `)"><i class="fa fa-image"></i></button>`
-                    }
-                },
-                {
-                    targets: [12],
+                    targets: [8],
                     render: (data, type, row, meta) => {
                         let textColor = '';
 
@@ -1108,15 +816,21 @@
                     }
                 },
                 {
+                    targets: [11],
+                    render: (data, type, row, meta) => {
+                        return `<button class="btn btn-defect" onclick="onShowDefectAreaImage('` + row.gambar + `', ` + row.defect_area_x + `, ` + row.defect_area_y + `)"><i class="fa fa-image"></i></button>`
+                    }
+                },
+                {
                     targets: "_all",
                     className: "text-nowrap align-middle"
                 },
             ],
         });
 
-        function defectInOutDetailReload() {
-            $("#defect-in-out-detail-table").DataTable().ajax.reload(() => {
-                $("#defectInOutDetailIn").val("-");
+        function secondaryInOutDetailReload() {
+            $("#secondary-in-out-detail-table").DataTable().ajax.reload(() => {
+                $("#secondaryInOutDetailIn").val("-");
                 $("#defectInOutDetailProcess").val("-");
                 $("#defectInOutDetailOut").val("-");
 
@@ -1124,15 +838,15 @@
                     url: "{{ route("get-defect-in-out-detail-total") }}",
                     type: "get",
                     data: {
-                        tanggal: $("#defectInOutDetailDate").val(),
-                        line: $("#defectInOutDetailLine").val(),
+                        tanggal: $("#secondaryInOutDetailDate").val(),
+                        line: $("#secondaryInOutDetailLine").val(),
                         departemen: $("#defectInOutDetailDepartment").val()
                     },
                     dataType: 'json',
                     success: function (response) {
                         console.log(response);
                         if (response) {
-                            $("#defectInOutDetailIn").val(response.defectIn);
+                            $("#secondaryInOutDetailIn").val(response.defectIn);
                             $("#defectInOutDetailProcess").val(response.defectProcess);
                             $("#defectInOutDetailOut").val(response.defectOut);
                         }
@@ -1142,16 +856,16 @@
                     }
                 });
 
-                defectInOutReload();
+                secondaryInOutReload();
             });
         }
 
-        async function getDefectInOutDetail(tanggal) {
-            $("#defectInOutDetailDate").val(tanggal);
+        async function getSecondaryInOutDetail(tanggal) {
+            $("#secondaryInOutDetailDate").val(tanggal);
 
-            defectInOutDetailReload();
+            secondaryInOutDetailReload();
 
-            $("#defect-in-out-modal").modal("show");
+            $("#secondary-in-out-modal").modal("show");
         }
 
         function exportExcel(elm) {
