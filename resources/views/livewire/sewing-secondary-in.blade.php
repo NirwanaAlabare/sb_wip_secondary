@@ -17,9 +17,9 @@
                 <button type="button" class="btn btn-sm btn-defect {{ $mode == "in" ? "active" : "" }}" {{ $mode == "in" ? "disabled" : "" }} id="button-in">IN</button>
             </div>
             <div class="d-flex justify-content-end w-50">
-                <select class="form-select select2 w-auto" name="secondaries" id="secondaries" wire>
-                    <option value="">Secondary 1</option>
-                    <option value="">Secondary 2</option>
+                <select class="form-select select2 w-auto" name="selectedSecondary" id="selectedSecondary" wire:model="selectedSecondary">
+                    <option value="1">Secondary 1</option>
+                    <option value="2">Secondary 2</option>
                 </select>
             </div>
         </div>
@@ -74,7 +74,7 @@
                         </div>
                     </div>
                     <div class="table-responsive my-3">
-                        <table class="table" id="secondary-in-table" wire:ignore>
+                        <table class="table" id="secondary-in-list-table" wire:ignore>
                             <thead>
                                 <th>Kode QR</th>
                                 <th>Line</th>
@@ -96,7 +96,7 @@
                     <div class="d-flex justify-content-between align-items-center">
                         <h5 class="card-title text-light text-center fw-bold">SECONDARY SEWING IN Summary</h5>
                         <div class="d-flex align-items-center">
-                            <h5 class="px-3 mb-0 text-light">Total : <b>{{ $totalDefectInOut }}</b></h5>
+                            <h5 class="px-3 mb-0 text-light">Total : <b>{{ $totalSecondaryInOut }}</b></h5>
                             <button class="btn btn-defect float-end" wire:click="refreshComponent()"
                                 onclick="secondaryInOutReload()">
                                 <i class="fa-solid fa-rotate"></i>
@@ -254,7 +254,7 @@
 
     <script>
         document.addEventListener("DOMContentLoaded", async function () {
-            document.getElementById('scannedItemSecondaryIn').focus();
+            document.getElementById('scannedSecondaryIn').focus();
 
             $('.select2').select2({
                 theme: "bootstrap-5",
@@ -397,14 +397,14 @@
         });
 
         // Defect In List
-        let defectInListTable = $("#defect-in-list-table").DataTable({
+        let defectInListTable = $("#secondary-in-list-table").DataTable({
             serverSide: true,
             processing: true,
             ordering: false,
             searching: false,
             paging: true,
             ajax: {
-                url: '{{ route('get-defect-in-list') }}',
+                url: '{{ route('in-get-secondary-in-list') }}',
                 dataType: 'json',
                 data: function (d) {
                     d.defectInOutputType = $("#defect-in-output-type").val();
@@ -420,13 +420,7 @@
             },
             columns: [
                 {
-                    data: null,
-                },
-                {
                     data: 'kode_numbering',
-                },
-                {
-                    data: 'defect_time',
                 },
                 {
                     data: 'sewing_line',
@@ -435,16 +429,13 @@
                     data: 'ws',
                 },
                 {
+                    data: 'style',
+                },
+                {
+                    data: 'color',
+                },
+                {
                     data: 'size',
-                },
-                {
-                    data: 'defect_type',
-                },
-                {
-                    data: 'defect_qty',
-                },
-                {
-                    data: 'output_type',
                 },
             ],
             columnDefs: [
@@ -455,26 +446,6 @@
                 //         return meta.row+1;
                 //     }
                 // },
-                {
-                    targets: [4],
-                    className: "text-nowrap text-center align-middle",
-                    render: (data, type, row, meta) => {
-                        return row.ws + "<br>" + row.style + "<br>" + row.color;
-                    }
-                },
-                {
-                    targets: [8],
-                    className: "text-nowrap text-center align-middle",
-                    render: (data, type, row, meta) => {
-                        let textColor = "";
-                        if (data == "packing") {
-                            textColor = "text-success";
-                        } else {
-                            textColor = "text-danger";
-                        }
-                        return "<span class='fw-bold " + textColor + "'>" + (data && data == "packing" ? "finishing" : data).toUpperCase() + "</span>";
-                    }
-                },
                 {
                     targets: "_all",
                     className: "text-nowrap text-center align-middle"
@@ -489,15 +460,15 @@
             }
         });
 
-        $("#defect-in-list-table").DataTable().on('draw.dt', function (e, settings, json, xhr) {
-            var info = $("#defect-in-list-table").DataTable().page.info();
+        $("#secondary-in-list-table").DataTable().on('draw.dt', function (e, settings, json, xhr) {
+            var info = $("#secondary-in-list-table").DataTable().page.info();
             var totalEntries = info.recordsDisplay;
             $('#total-defect-in b').text(totalEntries);
         });
 
         function reloadSecondaryInListTable() {
-            $("#defect-in-list-table").DataTable().ajax.reload(() => {
-                var info = $("#defect-in-list-table").DataTable().page.info();
+            $("#secondary-in-list-table").DataTable().ajax.reload(() => {
+                var info = $("#secondary-in-list-table").DataTable().page.info();
                 var totalEntries = info.recordsDisplay;
                 $('#total-defect-in b').text(totalEntries);
             });
@@ -508,16 +479,16 @@
 
             $.ajax({
                 type: "post",
-                url: "{{ route('submit-defect-in') }}",
+                url: "{{ route('in-submit-secondary-in') }}",
                 data: {
-                    scannedDefectIn: $("#scannedItemSecondaryIn").val(),
+                    scannedDefectIn: $("#scannedSecondaryIn").val(),
                     defectInOutputType: $("#defect-in-output-type").val(),
                 },
                 dataType: "json",
                 success: function (response) {
                     document.getElementById("loading").classList.add("d-none");
 
-                    $("#scannedItemSecondaryIn").focus();
+                    $("#scannedSecondaryIn").focus();
 
                     if (response) {
                         showNotification(response.status, response.message);
@@ -533,8 +504,8 @@
             });
         }
 
-        var scannedItemSecondaryIn = document.getElementById("scannedItemSecondaryIn");
-        scannedItemSecondaryIn.addEventListener("change", async function () {
+        var scannedSecondaryIn = document.getElementById("scannedSecondaryIn");
+        scannedSecondaryIn.addEventListener("change", async function () {
             @this.scannedDefectIn = this.value;
 
             // submit
@@ -549,7 +520,7 @@
             console.log(mode);
 
             if (mode == "in") {
-                document.getElementById('scannedItemSecondaryIn').focus();
+                document.getElementById('scannedSecondaryIn').focus();
                 document.getElementById('button-out').disabled = false;
 
                 reloadSecondaryInListTable();
@@ -562,7 +533,7 @@
             }
             console.log(type, $("#defect-" + type + "-date").val());
             $.ajax({
-                url: "{{ route("get-master-plan") }}",
+                url: "{{ route("in-get-master-plan") }}",
                 method: "GET",
                 data: {
                     date: $("#defect-" + type + "-date").val(),
@@ -598,7 +569,7 @@
                 type = 'in';
             }
             $.ajax({
-                url: "{{ route("get-size") }}",
+                url: "{{ route("in-get-size") }}",
                 method: "GET",
                 data: {
                     master_plan: $("#select-defect-" + type + "-master-plan").val(),
@@ -690,7 +661,7 @@
             ordering: false,
             pageLength: 50,
             ajax: {
-                url: '{{ route('get-defect-in-out-daily') }}',
+                url: '{{ route('in-get-secondary-in-out-daily') }}',
                 dataType: 'json',
                 data: function (d) {
                     d.dateFrom = $("#dateFrom").val();
@@ -738,7 +709,7 @@
             ordering: false,
             pageLength: 50,
             ajax: {
-                url: '{{ route('get-defect-in-out-detail') }}',
+                url: '{{ route('in-get-secondary-in-out-detail') }}',
                 data: function (d) {
                     d.tanggal = $("#secondaryInOutDetailDate").val();
                     d.line = $("#secondaryInOutDetailLine").val();
@@ -835,7 +806,7 @@
                 $("#defectInOutDetailOut").val("-");
 
                 $.ajax({
-                    url: "{{ route("get-defect-in-out-detail-total") }}",
+                    url: "{{ route("in-get-secondary-in-out-detail-total") }}",
                     type: "get",
                     data: {
                         tanggal: $("#secondaryInOutDetailDate").val(),
@@ -882,7 +853,7 @@
             });
 
             $.ajax({
-                url: "{{ route("export-defect-in-out") }}",
+                url: "{{ route("in-export-secondary-in-out") }}",
                 type: 'post',
                 data: {
                     dateFrom: $("#dateFrom").val(),
