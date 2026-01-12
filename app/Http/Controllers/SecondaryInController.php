@@ -477,7 +477,7 @@ class SecondaryInController extends Controller
                 WHERE
                     `output_rfts`.`id` IS NOT NULL
                     AND output_rfts.master_plan_id is not null
-                    AND output_rfts.updated_at >= '2025-12-01 00:00:00'
+                    AND output_secondary_in.updated_at >= '2025-12-01 00:00:00'
                     AND output_secondary_master.id = '".$request->selectedSecondary."'
                     ".$secondaryInSearch."
                     ".$secondaryInFilterKode."
