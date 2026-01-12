@@ -9,6 +9,7 @@ use App\Models\SignalBit\Rft;
 use App\Models\SignalBit\Defect;
 use App\Models\SignalBit\DefectPacking;
 use App\Models\SignalBit\OutputFinishing;
+use App\Models\SignalBit\SewingSecondaryMaster;
 use App\Models\SignalBit\SewingSecondaryIn as SewingSecondaryInModel;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Carbon;
@@ -25,14 +26,18 @@ class SewingSecondaryIn extends Component
 
     public $lines;
     public $orders;
+    public $secondaryMaster;
 
     public $secondaryInShowPage;
     public $secondaryInDate;
     public $secondaryInLine;
     public $secondaryInQty;
-    public $secondaryInputType;
 
     public $selectedSecondary;
+    public $selectedSecondaryText;
+
+    public $secondaryInOutFrom;
+    public $secondaryInOutTo;
 
     // Filter
     public $secondaryInFilterKode;
@@ -44,17 +49,11 @@ class SewingSecondaryIn extends Component
 
     public $secondaryInMasterPlanOutput;
 
-    public $secondaryInSelectedMasterPlan;
-    public $secondaryInSelectedSize;
-    public $secondaryInSelectedType;
-    public $secondaryInSelectedArea;
-
     public $secondaryInFrom;
     public $secondaryInTo;
     public $secondaryInSearch;
-    public $secondaryInOutputType;
 
-    public $scannedsecondaryIn;
+    public $scannedSecondaryIn;
 
     public $mode;
 
@@ -82,6 +81,7 @@ class SewingSecondaryIn extends Component
         $this->mode = 'in';
         $this->lines = null;
         $this->orders = null;
+        $this->secondaryMaster = null;
 
         // Defect In init value
         $this->secondaryInList = null;
@@ -89,8 +89,6 @@ class SewingSecondaryIn extends Component
         $this->secondaryInDate = date('Y-m-d');
         $this->secondaryInLine = null;
         $this->secondaryInMasterPlan = null;
-        $this->secondaryInSelectedMasterPlan = null;
-        $this->secondaryInSelectedSize = null;
         $this->secondaryInMasterPlanOutput = null;
         $this->secondaryInSearch = null;
         $this->secondaryInListAllChecked = null;
@@ -102,7 +100,10 @@ class SewingSecondaryIn extends Component
         $this->secondaryInFilterSize = null;
         $this->secondaryInFilterType = null;
 
-        $this->scannedsecondaryIn = null;
+        $this->scannedSecondaryIn = null;
+
+        $this->secondaryInOutFrom = date("Y-m-d", strtotime("-7 days"));
+        $this->secondaryInOutTo = date("Y-m-d");
 
         $this->secondaryInShowPage = 10;
         $this->secondaryInFrom = date("Y-m-d", strtotime("-7 days"));
@@ -138,7 +139,7 @@ class SewingSecondaryIn extends Component
 
     public function submitsecondaryIn()
     {
-        if ($this->scannedsecondaryIn) {
+        if ($this->scannedSecondaryIn) {
             $scannedOutput = Rft::selectRaw("
                     output_rfts.id,
                     output_rfts.kode_numbering,
@@ -148,7 +149,7 @@ class SewingSecondaryIn extends Component
                     act_costing.styleno style,
                     so_det.color,
                     so_det.size,
-                    userpassword.username,
+                    userpassword.username as sewing_line,
                     output_secondary_in.id secondary_in_id,
                     'qc' output_type
                 ")->
@@ -159,9 +160,7 @@ class SewingSecondaryIn extends Component
                 leftJoin("act_costing", "act_costing.id", "=", "master_plan.id_ws")->
                 leftJoin("output_secondary_in", "output_secondary_in.rft_id", "=", "output_rfts.id")->
                 whereNotNull("output_rfts.id")->
-                where("output_rfts.defect_status", "defect")->
-                where("output_defect_types.allocation", Auth::user()->Groupp)->
-                where("output_rfts.kode_numbering", $this->scannedsecondaryIn)->
+                where("output_rfts.kode_numbering", $this->scannedSecondaryIn)->
                 first();
 
             if ($scannedOutput) {
@@ -178,7 +177,7 @@ class SewingSecondaryIn extends Component
                     ]);
 
                     if ($createsecondaryIn) {
-                        $this->emit('alert', 'success', "DEFECT '".$scannedOutput->defect_type."' dengan KODE '".$this->scannedsecondaryIn."' berhasil masuk ke '".Auth::user()->Groupp."'");
+                        $this->emit('alert', 'success', "DEFECT '".$scannedOutput->defect_type."' dengan KODE '".$this->scannedSecondaryIn."' berhasil masuk ke 'SECONDARY'");
                     } else {
                         $this->emit('alert', 'error', "Terjadi kesalahan.");
                     }
@@ -186,13 +185,13 @@ class SewingSecondaryIn extends Component
                     $this->emit('alert', 'warning', "QR sudah discan.");
                 }
             } else {
-                $this->emit('alert', 'error', "Defect dengan QR '".$this->scannedsecondaryIn."' tidak ditemukan di '".Auth::user()->Groupp."'.");
+                $this->emit('alert', 'error', "Defect dengan QR '".$this->scannedSecondaryIn."' tidak ditemukan di 'SECONDARY'.");
             }
         } else {
             $this->emit('alert', 'error', "QR tidak sesuai.");
         }
 
-        $this->scannedsecondaryIn = null;
+        $this->scannedSecondaryIn = null;
         $this->emit('qrInputFocus', $this->mode);
     }
 
@@ -218,6 +217,8 @@ class SewingSecondaryIn extends Component
 
         $this->lines = UserPassword::where("Groupp", "SEWING")->orderBy("line_id", "asc")->get();
 
+        $this->secondaryMaster = SewingSecondaryMaster::get();
+
         // All Defect
         $secondaryInOutDaily = SewingSecondaryInModel::selectRaw("
                 DATE(output_secondary_in.created_at) tanggal,
@@ -228,9 +229,10 @@ class SewingSecondaryIn extends Component
                 SUM(CASE WHEN output_secondary_out.id IS NOT NULL THEN 1 ELSE 0 END) total_process
             ")->
             leftJoin("output_rfts", "output_rfts.id", "=", "output_secondary_in.rft_id")->
-            leftJoin("output_secondary_master", "output_secondary_master.id", "=", "output_secondary_in.output_secondary_id")->
-            leftJoin("output_secondary_out", "output_secondary_out.output_secondary_in_id", "=", "output_secondary_in.id")->
-            whereBetween("output_secondary_in.created_at", [$this->secondaryInFrom." 00:00:00", $this->secondaryInTo." 23:59:59"])->
+            leftJoin("output_secondary_master", "output_secondary_master.id", "=", "output_secondary_in.secondary_id")->
+            leftJoin("output_secondary_out", "output_secondary_out.secondary_in_id", "=", "output_secondary_in.id")->
+            whereBetween("output_secondary_in.created_at", [$this->secondaryInOutFrom." 00:00:00", $this->secondaryInOutTo." 23:59:59"])->
+            where("output_secondary_master.id", $this->selectedSecondary)->
             groupByRaw("DATE(output_secondary_in.created_at)")->
             get();
 

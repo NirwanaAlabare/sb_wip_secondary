@@ -1,6 +1,5 @@
 <div>
-    <div class="loading-container-fullscreen" wire:loading
-        wire:target="changeMode, preSaveSelectedDefectIn, saveSelectedDefectIn, saveCheckedDefectIn, saveAllDefectIn, preSaveSelectedDefectOut, saveSelectedDefectOut, saveCheckedDefectOut, saveAllDefectOut, submitDefectIn, submitDefectOut, submitDefectOut, refreshComponent, defectInOutputType, defectInLine, defectOutOutputType, defectOutLine, showDefectAreaImage, defectOutFilterKode, defectInFilterKode, defectOutFilterWaktu, defectInFilterWaktu, defectOutFilterLine, defectInFilterLine, defectOutFilterMasterPlan, defectInFilterMasterPlan, defectOutFilterSize, defectInFilterSize, defectOutFilterType, defectInFilterType">
+    <div class="loading-container-fullscreen" wire:loading wire:target="changeMode, submitDefectIn, refreshComponent, secondaryInLine, showDefectAreaImage, secondaryInFilterKode, secondaryInFilterWaktu, secondaryInFilterLine, secondaryInFilterMasterPlan, secondaryInFilterSize, secondaryInFilterSecondary">
         <div class="loading-container">
             <div class="loading"></div>
         </div>
@@ -13,13 +12,14 @@
     <div class="row g-3">
         <div class="d-flex justify-content-center">
             <div class="d-flex justify-content-end gap-1 w-50">
-                <button type="button" class="btn btn-sm btn-sb-outline {{ $mode == "in-out" ? "active" : "" }}" {{ $mode == "in-out" ? "disabled" : "" }} id="button-in-out">SUM</button>
+                <button type="button" class="btn btn-sm btn-sb-outline {{ $mode == "sum" ? "active" : "" }}" {{ $mode == "sum" ? "disabled" : "" }} id="button-in-out">SUM</button>
                 <button type="button" class="btn btn-sm btn-defect {{ $mode == "in" ? "active" : "" }}" {{ $mode == "in" ? "disabled" : "" }} id="button-in">IN</button>
             </div>
-            <div class="d-flex justify-content-end w-50">
-                <select class="form-select select2 w-auto" name="selectedSecondary" id="selectedSecondary" wire:model="selectedSecondary">
-                    <option value="1">Secondary 1</option>
-                    <option value="2">Secondary 2</option>
+            <div class="d-flex justify-content-end w-50" wire:ignore>
+                <select class="form-select select2 w-auto" name="selectedSecondary" id="selectedSecondary">
+                    @foreach ($secondaryMaster as $secondary)
+                        <option value="{{ $secondary->id }}">{{ $secondary->secondary }}</option>
+                    @endforeach
                 </select>
             </div>
         </div>
@@ -29,11 +29,10 @@
             <div class="card">
                 <div class="card-header bg-defect">
                     <div class="d-flex justify-content-between align-items-center">
-                        <h5 class="card-title text-light text-center fw-bold">INPUT SECONDARY 1
-                        </h5>
+                        <h5 class="card-title text-light text-center fw-bold">{{ $selectedSecondaryText }} Input</h5>
                         <div class="d-flex align-items-center">
-                            <h5 class="px-3 mb-0 text-light" id="total-defect-in" wire:ignore>Total : <b>0</b></h5>
-                            <button class="btn btn-defect float-end" wire:click="refreshComponent()" onclick="reloadSewingSecondaryInListTable()">
+                            <h5 class="px-3 mb-0 text-light" id="total-secondary-in" wire:ignore>Total : <b>0</b></h5>
+                            <button class="btn btn-dark float-end" wire:click="refreshComponent()" onclick="reloadSecondaryInListTable()">
                                 <i class="fa-solid fa-rotate"></i>
                             </button>
                         </div>
@@ -73,16 +72,55 @@
                             </div>
                         </div>
                     </div>
-                    <div class="table-responsive my-3">
-                        <table class="table" id="secondary-in-list-table" wire:ignore>
+                    <div class="table-responsive mt-3">
+                        <table class="table w-100" id="secondary-in-list-table" wire:ignore>
                             <thead>
-                                <th>Kode QR</th>
-                                <th>Line</th>
-                                <th>Worksheet</th>
-                                <th>Style</th>
-                                <th>Color</th>
-                                <th>Size</th>
+                                <tr>
+                                    <th>No. </th>
+                                    <th>Kode QR</th>
+                                    <th>Line</th>
+                                    <th>Worksheet</th>
+                                    <th>Style</th>
+                                    <th>Color</th>
+                                    <th>Size</th>
+                                    <th>Secondary</th>
+                                    <th>Created By</th>
+                                    <th>Created At</th>
+                                </tr>
+                                <tr class="text-center align-middle">
+                                    <td>
+                                    </td>
+                                    <td>
+                                        <input type="text" class="form-control form-control-sm" id="secondaryInFilterKode" onkeyup="reloadsecondaryInListTable()">
+                                    </td>
+                                    <td>
+                                        <input type="text" class="form-control form-control-sm" id="secondaryInFilterLine" onkeyup="reloadsecondaryInListTable()">
+                                    </td>
+                                    <td>
+                                        <input type="text" class="form-control form-control-sm" id="secondaryInFilterWS" onkeyup="reloadsecondaryInListTable()">
+                                    </td>
+                                    <td>
+                                        <input type="text" class="form-control form-control-sm" id="secondaryInFilterStyle" onkeyup="reloadsecondaryInListTable()">
+                                    </td>
+                                    <td>
+                                        <input type="text" class="form-control form-control-sm" id="secondaryInFilterColor" onkeyup="reloadsecondaryInListTable()">
+                                    </td>
+                                    <td>
+                                        <input type="text" class="form-control form-control-sm" id="secondaryInFilterSize" onkeyup="reloadsecondaryInListTable()">
+                                    </td>
+                                    <td>
+                                        <input type="text" class="form-control form-control-sm" id="secondaryInFilterSecondary" onkeyup="reloadsecondaryInListTable()">
+                                    </td>
+                                    <td>
+                                        <input type="text" class="form-control form-control-sm" id="secondaryInFilterAuthor" onkeyup="reloadsecondaryInListTable()">
+                                    </td>
+                                    <td>
+                                        <input type="text" class="form-control form-control-sm" id="secondaryInFilterWaktu" onkeyup="reloadsecondaryInListTable()">
+                                    </td>
+                                </tr>
                             </thead>
+                            <tbody>
+                            </tbody>
                         </table>
                     </div>
                 </div>
@@ -94,11 +132,10 @@
             <div class="card">
                 <div class="card-header bg-sb">
                     <div class="d-flex justify-content-between align-items-center">
-                        <h5 class="card-title text-light text-center fw-bold">SECONDARY SEWING IN Summary</h5>
+                        <h5 class="card-title text-light text-center fw-bold">{{ $selectedSecondaryText }} Summary</h5>
                         <div class="d-flex align-items-center">
                             <h5 class="px-3 mb-0 text-light">Total : <b>{{ $totalSecondaryInOut }}</b></h5>
-                            <button class="btn btn-defect float-end" wire:click="refreshComponent()"
-                                onclick="secondaryInOutReload()">
+                            <button class="btn btn-dark float-end" wire:click="refreshComponent()" onclick="secondaryInOutReload()">
                                 <i class="fa-solid fa-rotate"></i>
                             </button>
                         </div>
@@ -130,10 +167,13 @@
                                         <th>Date</th>
                                         <th>Total IN</th>
                                         <th>Total PROCESS</th>
-                                        <th>Total OUT</th>
+                                        <th>Total RFT</th>
+                                        <th>Total DEFECT</th>
+                                        <th>Total REJECT</th>
                                     </tr>
                                 </thead>
-                                <tbody></tbody>
+                                <tbody>
+                                </tbody>
                             </table>
                         </div>
                     </div>
@@ -147,64 +187,49 @@
         <div class="modal-dialog modal-dialog-scrollable modal-fullscreen">
             <div class="modal-content">
                 <div class="modal-header bg-sb text-light fw-bold">
-                    <h5 class="modal-title">SUMMARY SECONDARY 1</h5>
+                    <h5 class="modal-title"><span id="secondary-in-out-modal-title"></span> SUMMARY</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <div class="row">
                         <div class="col-md-3">
                             <div class="mb-3">
-                                <label class="form-label">Tanggal</label>
+                                <label class="form-label fw-bold">Tanggal</label>
                                 <input type="text" class="form-control" id="secondaryInOutDetailDate" readonly>
                             </div>
                         </div>
-                        <div class="col-md-3">
-                            <div class="mb-3">
-                                <label class="form-label">Line</label>
-                                <select class="form-select select2-secondary-in-out-modal" id="secondaryInOutDetailLine"
-                                    onchange="secondaryInOutDetailReload()">
-                                    <option value="" selected>All Line</option>
-                                    @foreach ($lines as $line)
-                                        <option value="{{ $line->username }}">{{ str_replace("_", " ", $line->username) }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="mb-3">
-                                <label class="form-label">Department</label>
-                                <select class="form-select select2-secondary-in-out-modal" id="secondaryInOutDetailDepartment"
-                                    onchange="secondaryInOutDetailReload()">
-                                    <option value="">All Department</option>
-                                    <option value="qc">QC</option>
-                                    {{-- <option value="qcf">QC FINISHING</option> --}}
-                                    <option value="packing">FINISHING</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="row g-1 mb-3">
-                                <div class="col-md-4">
+                        <div class="col-md-6">
+                            <div class="d-flex mb-3 gap-1">
+                                <div class="w-auto">
                                     <label class="form-label fw-bold">IN</label>
                                     <input type="text" class="form-control" id="secondaryInOutDetailIn" readonly>
                                 </div>
-                                <div class="col-md-4">
+                                <div class="w-auto">
                                     <label class="form-label fw-bold">OUTPUT</label>
-                                    <input type="text" class="form-control" id="secondaryInOutDetailOut" readonly>
+                                    <input type="text" class="form-control" id="secondaryInOutDetailRft" readonly>
                                 </div>
-                                <div class="col-md-4">
+                                <div class="w-auto">
                                     <label class="form-label fw-bold">DEFECT</label>
                                     <input type="text" class="form-control" id="secondaryInOutDetailDefect" readonly>
                                 </div>
-                                <div class="col-md-4">
+                                <div class="w-auto">
                                     <label class="form-label fw-bold">REJECT</label>
                                     <input type="text" class="form-control" id="secondaryInOutDetailReject" readonly>
                                 </div>
-                                <div class="col-md-4">
+                                <div class="w-auto">
                                     <label class="form-label fw-bold">WIP</label>
                                     <input type="text" class="form-control" id="secondaryInOutDetailProcess" readonly>
                                 </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Secondary</label>
+                                <select class="form-select select2-secondary-in-out-modal w-auto" name="selectedSecondaryModal" id="selectedSecondaryModal" >
+                                    @foreach ($secondaryMaster as $secondary)
+                                        <option value="{{ $secondary->id }}">{{ $secondary->secondary }}</option>
+                                    @endforeach
+                                </select>
                             </div>
                         </div>
                         <div class="col-md-12">
@@ -214,17 +239,18 @@
                                         <tr>
                                             <th>Time IN</th>
                                             <th>Time OUT</th>
-                                            <th>Line</th>
-                                            <th>Dept.</th>
                                             <th>QR</th>
+                                            <th>Line</th>
                                             <th>No. WS</th>
                                             <th>Style</th>
                                             <th>Color</th>
                                             <th>Size</th>
+                                            <th>Status</th>
                                             <th>Type</th>
                                             <th>Area</th>
                                             <th>Image</th>
-                                            <th>Status</th>
+                                            <th>IN By</th>
+                                            <th>OUT By</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -234,6 +260,19 @@
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Show Defect Area --}}
+    <div class="show-defect-area" id="show-defect-area" wire:ignore>
+        <div class="position-relative d-flex flex-column justify-content-center align-items-center">
+            <button type="button" class="btn btn-lg btn-light rounded-0 hide-defect-area-img" onclick="onHideDefectAreaImage()">
+                <i class="fa-regular fa-xmark fa-lg"></i>
+            </button>
+            <div class="defect-area-img-container mx-auto">
+                <div class="defect-area-img-point" id="defect-area-img-point-show"></div>
+                <img src="" alt="" class="img-fluid defect-area-img" id="defect-area-img-show">
             </div>
         </div>
     </div>
@@ -269,12 +308,50 @@
                 dropdownParent: $('#secondary-in-out-modal')
             });
 
-            $('#select-defect-in-line').on('change', function (e) {
+            $('#selectedSecondary').on('change', function (e) {
                 Livewire.emit("loadingStart");
 
-                let selectedDefectInLine = $('#select-defect-in-line').val();
+                let selectedSecondary = $('#selectedSecondary').val();
+                let selectedSecondaryText = $('#selectedSecondary').find('option:selected').text();
 
-                @this.set('defectInLine', selectedDefectInLine);
+                @this.set('selectedSecondary', selectedSecondary);
+                @this.set('selectedSecondaryText', selectedSecondaryText);
+
+                if ($('#selectedSecondary').val() != $('#selectedSecondaryModal').val()) {
+                    $('#selectedSecondaryModal').val(selectedSecondary).trigger("change");
+                }
+
+                $("#secondary-in-out-modal-title").html(selectedSecondaryText);
+
+                reloadSecondaryInListTable();
+                secondaryInOutDetailReload();
+            });
+
+            $('#selectedSecondaryModal').on('change', function (e) {
+                Livewire.emit("loadingStart");
+
+                let selectedSecondary = $('#selectedSecondaryModal').val();
+                let selectedSecondaryText = $('#selectedSecondaryModal').find('option:selected').text();
+
+                @this.set('selectedSecondary', selectedSecondary);
+                @this.set('selectedSecondaryText', selectedSecondaryText);
+
+                if ($('#selectedSecondary').val() != $('#selectedSecondaryModal').val()) {
+                    $('#selectedSecondary').val(selectedSecondary).trigger("change");
+                }
+
+                $("#secondary-in-out-modal-title").html(selectedSecondaryText);
+
+                reloadSecondaryInListTable();
+                secondaryInOutDetailReload();
+            });
+
+            $('#select-secondary-in-line').on('change', function (e) {
+                Livewire.emit("loadingStart");
+
+                let selectedsecondaryInLine = $('#select-secondary-in-line').val();
+
+                @this.set('secondaryInLine', selectedsecondaryInLine);
 
                 getMasterPlanData();
 
@@ -387,13 +464,11 @@
                 @this.changeMode("in")
             })
 
-            $('#button-out').on('click', async function (e) {
-                @this.changeMode("out")
-            })
-
             $('#button-in-out').on('click', async function (e) {
                 @this.changeMode("sum")
             })
+
+            $('#selectedSecondary').trigger('change');
         });
 
         // Defect In List
@@ -403,22 +478,28 @@
             ordering: false,
             searching: false,
             paging: true,
+            lengthChange: false,
             ajax: {
                 url: '{{ route('in-get-secondary-in-list') }}',
                 dataType: 'json',
                 data: function (d) {
-                    d.defectInOutputType = $("#defect-in-output-type").val();
-                    d.defectInSearch = $("#defect-in-search").val();
-                    d.defectInLine = $("#defect-in-line").val();
-                    d.defectInFilterKode = $("#defectInFilterKode").val();
-                    d.defectInFilterWaktu = $("#defectInFilterWaktu").val();
-                    d.defectInFilterLine = $("#defectInFilterLine").val();
-                    d.defectInFilterMasterPlan = $("#defectInFilterMasterPlan").val();
-                    d.defectInFilterSize = $("#defectInFilterSize").val();
-                    d.defectInFilterType = $("#defectInFilterType").val();
+                    d.selectedSecondary = $("#selectedSecondary").val();
+                    d.secondaryInSearch = $("#secondary-in-search").val();
+                    d.secondaryInLine = $("#secondary-in-line").val();
+                    d.secondaryInFilterKode = $("#secondaryInFilterKode").val();
+                    d.secondaryInFilterWaktu = $("#secondaryInFilterWaktu").val();
+                    d.secondaryInFilterLine = $("#secondaryInFilterLine").val();
+                    d.secondaryInFilterWS = $("#secondaryInFilterWS").val();
+                    d.secondaryInFilterStyle = $("#secondaryInFilterStyle").val();
+                    d.secondaryInFilterColor = $("#secondaryInFilterColor").val();
+                    d.secondaryInFilterSize = $("#secondaryInFilterSize").val();
+                    d.secondaryInFilterSecondary = $("#secondaryInFilterSecondary").val();
                 }
             },
             columns: [
+                {
+                    data: 'id',
+                },
                 {
                     data: 'kode_numbering',
                 },
@@ -436,6 +517,15 @@
                 },
                 {
                     data: 'size',
+                },
+                {
+                    data: 'secondary',
+                },
+                {
+                    data: 'created_by_username',
+                },
+                {
+                    data: 'secondary_in_time',
                 },
             ],
             columnDefs: [
@@ -463,26 +553,33 @@
         $("#secondary-in-list-table").DataTable().on('draw.dt', function (e, settings, json, xhr) {
             var info = $("#secondary-in-list-table").DataTable().page.info();
             var totalEntries = info.recordsDisplay;
-            $('#total-defect-in b').text(totalEntries);
+            $('#total-secondary-in b').text(totalEntries);
         });
 
         function reloadSecondaryInListTable() {
             $("#secondary-in-list-table").DataTable().ajax.reload(() => {
                 var info = $("#secondary-in-list-table").DataTable().page.info();
                 var totalEntries = info.recordsDisplay;
-                $('#total-defect-in b').text(totalEntries);
+                $('#total-secondary-in b').text(totalEntries);
             });
         }
 
         function submitSecondaryIn() {
             document.getElementById("loading").classList.remove("d-none");
 
+            $("#kodeNumbering").val("");
+            $("#sewingLine").val("");
+            $("#worksheet").val("");
+            $("#style").val("");
+            $("#color").val("");
+            $("#size").val("");
+
             $.ajax({
                 type: "post",
                 url: "{{ route('in-submit-secondary-in') }}",
                 data: {
-                    scannedDefectIn: $("#scannedSecondaryIn").val(),
-                    defectInOutputType: $("#defect-in-output-type").val(),
+                    scannedSecondaryIn: $("#scannedSecondaryIn").val(),
+                    selectedSecondary: $("#selectedSecondary").val(),
                 },
                 dataType: "json",
                 success: function (response) {
@@ -492,6 +589,13 @@
 
                     if (response) {
                         showNotification(response.status, response.message);
+
+                        $("#kodeNumbering").val(response.data.kode_numbering);
+                        $("#sewingLine").val(response.data.sewing_line);
+                        $("#worksheet").val(response.data.ws);
+                        $("#style").val(response.data.style);
+                        $("#color").val(response.data.color);
+                        $("#size").val(response.data.size);
 
                         reloadSecondaryInListTable();
                     }
@@ -506,7 +610,7 @@
 
         var scannedSecondaryIn = document.getElementById("scannedSecondaryIn");
         scannedSecondaryIn.addEventListener("change", async function () {
-            @this.scannedDefectIn = this.value;
+            @this.scannedSecondaryIn = this.value;
 
             // submit
             // @this.submitSecondaryIn();
@@ -521,7 +625,6 @@
 
             if (mode == "in") {
                 document.getElementById('scannedSecondaryIn').focus();
-                document.getElementById('button-out').disabled = false;
 
                 reloadSecondaryInListTable();
             }
@@ -531,25 +634,25 @@
             if (type != "in" && type != "out") {
                 type = 'in';
             }
-            console.log(type, $("#defect-" + type + "-date").val());
+            console.log(type, $("#secondary-in-date").val());
             $.ajax({
                 url: "{{ route("in-get-master-plan") }}",
                 method: "GET",
                 data: {
-                    date: $("#defect-" + type + "-date").val(),
-                    line: $("#select-defect-" + type + "-line").val(),
+                    date: $("#secondary-in-date").val(),
+                    line: $("#select-secondary-in-line").val(),
                 },
                 success: function (res) {
-                    document.getElementById("select-defect-" + type + "-master-plan").innerHTML = "";
+                    document.getElementById("select-secondary-in-master-plan").innerHTML = "";
 
-                    let selectElement = document.getElementById("select-defect-" + type + "-master-plan")
+                    let selectElement = document.getElementById("select-secondary-in-master-plan")
 
                     let option = document.createElement("option");
                     option.value = "";
                     option.innerText = "All Master Plan";
                     selectElement.appendChild(option);
 
-                    $("#select-defect-" + type + "-master-plan").val("").trigger("change");
+                    $("#select-secondary-in-master-plan").val("").trigger("change");
 
                     if (res && res.length > 0) {
                         res.forEach(item => {
@@ -633,20 +736,22 @@
 
             defectAreaImageElement.style.display = 'block'
 
-            let rect = await defectAreaImageElement.getBoundingClientRect();
+            if (x && y) {
+                let rect = await defectAreaImageElement.getBoundingClientRect();
 
-            let pointWidth = null;
-            if (rect.width == 0) {
-                pointWidth = 35;
-            } else {
-                pointWidth = 0.03 * rect.width;
+                let pointWidth = null;
+                if (rect.width == 0) {
+                    pointWidth = 35;
+                } else {
+                    pointWidth = 0.03 * rect.width;
+                }
+
+                defectAreaImagePointElement.style.width = pointWidth + 'px';
+                defectAreaImagePointElement.style.height = defectAreaImagePointElement.style.width;
+                defectAreaImagePointElement.style.left = 'calc(' + x + '% - ' + 0.5 * pointWidth + 'px)';
+                defectAreaImagePointElement.style.top = 'calc(' + y + '% - ' + 0.5 * pointWidth + 'px)';
+                defectAreaImagePointElement.style.display = 'block';
             }
-
-            defectAreaImagePointElement.style.width = pointWidth + 'px';
-            defectAreaImagePointElement.style.height = defectAreaImagePointElement.style.width;
-            defectAreaImagePointElement.style.left = 'calc(' + x + '% - ' + 0.5 * pointWidth + 'px)';
-            defectAreaImagePointElement.style.top = 'calc(' + y + '% - ' + 0.5 * pointWidth + 'px)';
-            defectAreaImagePointElement.style.display = 'block';
         });
 
         function onHideDefectAreaImage() {
@@ -666,6 +771,7 @@
                 data: function (d) {
                     d.dateFrom = $("#dateFrom").val();
                     d.dateTo = $("#dateTo").val();
+                    d.secondary = $("#selectedSecondary").val();
                 }
             },
             columns: [
@@ -682,7 +788,13 @@
                     data: 'total_process',
                 },
                 {
-                    data: 'total_out',
+                    data: 'total_rft',
+                },
+                {
+                    data: 'total_defect',
+                },
+                {
+                    data: 'total_reject',
                 }
             ],
             columnDefs: [
@@ -712,8 +824,7 @@
                 url: '{{ route('in-get-secondary-in-out-detail') }}',
                 data: function (d) {
                     d.tanggal = $("#secondaryInOutDetailDate").val();
-                    d.line = $("#secondaryInOutDetailLine").val();
-                    d.departemen = $("#defectInOutDetailDepartment").val();
+                    d.secondary = $("#selectedSecondaryModal").val();
                 },
                 dataType: 'json',
             },
@@ -773,23 +884,9 @@
                     }
                 },
                 {
-                    targets: [8],
-                    render: (data, type, row, meta) => {
-                        let textColor = '';
-
-                        if (data == "reworked") {
-                            textColor = "text-rework";
-                        } else {
-                            textColor = "text-defect";
-                        }
-
-                        return `<span class="` + textColor + ` fw-bold">` + (data ? data.toUpperCase() : '-') + `</span>`;
-                    }
-                },
-                {
                     targets: [11],
                     render: (data, type, row, meta) => {
-                        return `<button class="btn btn-defect" onclick="onShowDefectAreaImage('` + row.gambar + `', ` + row.defect_area_x + `, ` + row.defect_area_y + `)"><i class="fa fa-image"></i></button>`
+                        return `<button class="btn btn-dark" onclick="onShowDefectAreaImage('` + row.gambar + `', ` + row.defect_area_x + `, ` + row.defect_area_y + `)"><i class="fa fa-image"></i></button>`
                     }
                 },
                 {
@@ -801,25 +898,28 @@
 
         function secondaryInOutDetailReload() {
             $("#secondary-in-out-detail-table").DataTable().ajax.reload(() => {
-                $("#secondaryInOutDetailIn").val("-");
-                $("#defectInOutDetailProcess").val("-");
-                $("#defectInOutDetailOut").val("-");
+                $("#secondaryInOutDetailIn").val(0);
+                $("#secondaryInOutDetailProcess").val(0);
+                $("#secondaryInOutDetailRft").val(0);
+                $("#secondaryInOutDetailDefect").val(0);
+                $("#secondaryInOutDetailReject").val(0);
 
                 $.ajax({
                     url: "{{ route("in-get-secondary-in-out-detail-total") }}",
                     type: "get",
                     data: {
                         tanggal: $("#secondaryInOutDetailDate").val(),
-                        line: $("#secondaryInOutDetailLine").val(),
-                        departemen: $("#defectInOutDetailDepartment").val()
+                        selectedSecondary: $("#selectedSecondary").val(),
                     },
                     dataType: 'json',
                     success: function (response) {
                         console.log(response);
                         if (response) {
-                            $("#secondaryInOutDetailIn").val(response.defectIn);
-                            $("#defectInOutDetailProcess").val(response.defectProcess);
-                            $("#defectInOutDetailOut").val(response.defectOut);
+                            $("#secondaryInOutDetailIn").val(response.secondaryIn);
+                            $("#secondaryInOutDetailProcess").val(response.secondaryProcess);
+                            $("#secondaryInOutDetailRft").val(response.secondaryRft);
+                            $("#secondaryInOutDetailDefect").val(response.secondaryDefect);
+                            $("#secondaryInOutDetailReject").val(response.secondaryReject);
                         }
                     },
                     error: function (jqXHR) {
@@ -858,6 +958,7 @@
                 data: {
                     dateFrom: $("#dateFrom").val(),
                     dateTo: $("#dateTo").val(),
+                    selectedSecondary: $("#selectedSecondary").val(),
                 },
                 xhrFields: { responseType: 'blob' },
                 success: function (res) {
@@ -877,7 +978,7 @@
                     var blob = new Blob([res]);
                     var link = document.createElement('a');
                     link.href = window.URL.createObjectURL(blob);
-                    link.download = "Defect In Out {{ Auth::user()->Groupp }} " + $("#dateFrom").val() + " - " + $("#dateTo").val() + ".xlsx";
+                    link.download = "Secondary In Out {{ Auth::user()->Groupp }} " + $("#dateFrom").val() + " - " + $("#dateTo").val() + ".xlsx";
                     link.click();
                 }, error: function (jqXHR) {
                     elm.removeAttribute('disabled');
