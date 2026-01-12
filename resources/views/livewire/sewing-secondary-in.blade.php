@@ -91,31 +91,31 @@
                                     <td>
                                     </td>
                                     <td>
-                                        <input type="text" class="form-control form-control-sm" id="secondaryInFilterKode" onkeyup="reloadsecondaryInListTable()">
+                                        <input type="text" class="form-control form-control-sm" id="secondaryInFilterKode" onkeyup="reloadSecondaryInListTable()">
                                     </td>
                                     <td>
-                                        <input type="text" class="form-control form-control-sm" id="secondaryInFilterLine" onkeyup="reloadsecondaryInListTable()">
+                                        <input type="text" class="form-control form-control-sm" id="secondaryInFilterLine" onkeyup="reloadSecondaryInListTable()">
                                     </td>
                                     <td>
-                                        <input type="text" class="form-control form-control-sm" id="secondaryInFilterWS" onkeyup="reloadsecondaryInListTable()">
+                                        <input type="text" class="form-control form-control-sm" id="secondaryInFilterWS" onkeyup="reloadSecondaryInListTable()">
                                     </td>
                                     <td>
-                                        <input type="text" class="form-control form-control-sm" id="secondaryInFilterStyle" onkeyup="reloadsecondaryInListTable()">
+                                        <input type="text" class="form-control form-control-sm" id="secondaryInFilterStyle" onkeyup="reloadSecondaryInListTable()">
                                     </td>
                                     <td>
-                                        <input type="text" class="form-control form-control-sm" id="secondaryInFilterColor" onkeyup="reloadsecondaryInListTable()">
+                                        <input type="text" class="form-control form-control-sm" id="secondaryInFilterColor" onkeyup="reloadSecondaryInListTable()">
                                     </td>
                                     <td>
-                                        <input type="text" class="form-control form-control-sm" id="secondaryInFilterSize" onkeyup="reloadsecondaryInListTable()">
+                                        <input type="text" class="form-control form-control-sm" id="secondaryInFilterSize" onkeyup="reloadSecondaryInListTable()">
                                     </td>
                                     <td>
-                                        <input type="text" class="form-control form-control-sm" id="secondaryInFilterSecondary" onkeyup="reloadsecondaryInListTable()">
+                                        <input type="text" class="form-control form-control-sm" id="secondaryInFilterSecondary" onkeyup="reloadSecondaryInListTable()">
                                     </td>
                                     <td>
-                                        <input type="text" class="form-control form-control-sm" id="secondaryInFilterAuthor" onkeyup="reloadsecondaryInListTable()">
+                                        <input type="text" class="form-control form-control-sm" id="secondaryInFilterAuthor" onkeyup="reloadSecondaryInListTable()">
                                     </td>
                                     <td>
-                                        <input type="text" class="form-control form-control-sm" id="secondaryInFilterWaktu" onkeyup="reloadsecondaryInListTable()">
+                                        <input type="text" class="form-control form-control-sm" id="secondaryInFilterWaktu" onkeyup="reloadSecondaryInListTable()">
                                     </td>
                                 </tr>
                             </thead>
@@ -590,12 +590,14 @@
                     if (response) {
                         showNotification(response.status, response.message);
 
-                        $("#kodeNumbering").val(response.data.kode_numbering);
-                        $("#sewingLine").val(response.data.sewing_line);
-                        $("#worksheet").val(response.data.ws);
-                        $("#style").val(response.data.style);
-                        $("#color").val(response.data.color);
-                        $("#size").val(response.data.size);
+                        if (response.data) {
+                            $("#kodeNumbering").val(response.data.kode_numbering);
+                            $("#sewingLine").val(response.data.sewing_line);
+                            $("#worksheet").val(response.data.ws);
+                            $("#style").val(response.data.style);
+                            $("#color").val(response.data.color);
+                            $("#size").val(response.data.size);
+                        }
 
                         reloadSecondaryInListTable();
                     }
@@ -978,7 +980,7 @@
                     var blob = new Blob([res]);
                     var link = document.createElement('a');
                     link.href = window.URL.createObjectURL(blob);
-                    link.download = "Secondary In Out {{ Auth::user()->Groupp }} " + $("#dateFrom").val() + " - " + $("#dateTo").val() + ".xlsx";
+                    link.download = "Secondary In Out " + $("#selectedSecondary").val() + " " + $("#dateFrom").val() + " - " + $("#dateTo").val() + ".xlsx";
                     link.click();
                 }, error: function (jqXHR) {
                     elm.removeAttribute('disabled');
