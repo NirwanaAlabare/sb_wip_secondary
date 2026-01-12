@@ -407,7 +407,7 @@ input[type=number] {
 
 /* Navbar */
 .navbar {
-    border-bottom: 3px solid var(--defect-color);
+    border-bottom: 3px solid var(--sb-secondary-color);
     padding-top: 0;
     padding-bottom: 0;
 }
