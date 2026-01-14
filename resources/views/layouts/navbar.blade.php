@@ -11,15 +11,26 @@
         <div class="container-fluid">
             <div class="d-flex align-items-center">
                 <a class="navbar-brand" href="{{ url('/') }}"><img src="{{ asset('images/Frame 1.png') }}" alt="" width="130"></a>
-                <p class="mb-0 bg-sb-secondary p-1 text-light rounded-3 fw-bold">SECONDARY SEWING IN</p>
+                <p class="mb-0 bg-sb-secondary p-1 text-light rounded-3 fw-bold">SECONDARY {{ $mode ? $mode : "IN"}}</p>
             </div>
             <ul class="navbar-nav align-items-center gap-3">
                 <div class="row justify-content-end align-items-center">
+
                     <div class="col-md-auto">
                         <li class="nav-item w-100">
                             <p id="input-type"></p>
                         </li>
                     </div>
+                    @role ("in_out")
+                        <div class="col-md-auto">
+                            <li class="nav-item w-100">
+                                <select name="in_out" id="in-out" class="form-select form-select-sm" onchange="changeInOutMode(this.value)">
+                                    <option value="IN" {{ $mode && $mode == "IN" ? "selected" : "" }}>IN</option>
+                                    <option value="OUT" {{ $mode && $mode == "OUT" ? "selected" : "" }}>OUT</option>
+                                </select>
+                            </li>
+                        </div>
+                    @endrole
                     <div class="col-md-auto">
                         <li class="nav-item w-100">
                             <input type="date" class="form-control form-control-sm" id="tanggal" name="tanggal" value="{{ $thisOrderDate }}" {{ $disableDate ? "readonly" : "" }}>
@@ -75,6 +86,14 @@
                     Livewire.emit('setDate', tanggalValue);
                 }
             });
+        }
+
+        function changeInOutMode(mode) {
+            if (mode == "IN") {
+                window.location.href = "{{ url('/in') }}";
+            } else if (mode == "OUT") {
+                window.location.href = "{{ url('/out') }}";
+            }
         }
     </script>
 @endpush

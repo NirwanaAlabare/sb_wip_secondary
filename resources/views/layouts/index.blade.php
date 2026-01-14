@@ -1,3 +1,11 @@
+@php
+    if (isset($mode)) {
+        $mode = strtoupper($mode);
+    } else {
+        $mode = "in";
+    }
+@endphp
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,7 +14,7 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <meta name="csrf-token" content="{{ csrf_token() }}" />
     <link rel="icon" type="image/x-icon" href=" {{ asset('images/secondary.ico') }}">
-    <title>SEWING SECONDARY IN</title>
+    <title>SEWING SECONDARY {{ $mode ?? '' }}</title>
 
     @include('layouts.link')
 
@@ -28,7 +36,7 @@
             $thisOrderDate = $orderDate;
         }
     @endphp
-    @include('layouts.navbar', ["orderDate" => $thisOrderDate])
+    @include('layouts.navbar', ["orderDate" => $thisOrderDate, "mode" => $mode])
 
     @include('profile')
     @include('history')

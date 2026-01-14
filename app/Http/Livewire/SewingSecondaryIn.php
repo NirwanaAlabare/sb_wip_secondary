@@ -91,7 +91,6 @@ class SewingSecondaryIn extends Component
         $this->secondaryInMasterPlan = null;
         $this->secondaryInMasterPlanOutput = null;
         $this->secondaryInSearch = null;
-        $this->secondaryInListAllChecked = null;
 
         $this->secondaryInFilterKode = null;
         $this->secondaryInFilterWaktu = null;
@@ -137,64 +136,6 @@ class SewingSecondaryIn extends Component
     //     }
     // }
 
-    public function submitsecondaryIn()
-    {
-        if ($this->scannedSecondaryIn) {
-            $scannedOutput = Rft::selectRaw("
-                    output_rfts.id,
-                    output_rfts.kode_numbering,
-                    output_rfts.so_det_id,
-                    output_defect_types.defect_type,
-                    act_costing.kpno ws,
-                    act_costing.styleno style,
-                    so_det.color,
-                    so_det.size,
-                    userpassword.username as sewing_line,
-                    output_secondary_in.id secondary_in_id,
-                    'qc' output_type
-                ")->
-                leftJoin("user_sb_wip", "user_sb_wip.id", "=", "output_rfts.created_by")->
-                leftJoin("userpassword", "userpassword.line_id", "=", "user_sb_wip.line_id")->
-                leftJoin("so_det", "so_det.id", "=", "output_rfts.so_det_id")->
-                leftJoin("master_plan", "master_plan.id", "=", "output_rfts.master_plan_id")->
-                leftJoin("act_costing", "act_costing.id", "=", "master_plan.id_ws")->
-                leftJoin("output_secondary_in", "output_secondary_in.rft_id", "=", "output_rfts.id")->
-                whereNotNull("output_rfts.id")->
-                where("output_rfts.kode_numbering", $this->scannedSecondaryIn)->
-                first();
-
-            if ($scannedOutput) {
-                $secondaryIn = SewingSecondaryInModel::where("rft_id", $scannedOutput->id)->first();
-
-                if (!$secondaryIn) {
-                    $createsecondaryIn = SewingSecondaryInModel::create([
-                        "kode_numbering" => $scannedOutput->kode_numbering,
-                        "rft_id" => $scannedOutput->id,
-                        "sewing_secondary_id" => $selectedSecondary,
-                        "created_by" => Auth::user()->id,
-                        "created_by_username" => Auth::user()->username,
-                        "output_type" => $scannedOutput->output_type,
-                    ]);
-
-                    if ($createsecondaryIn) {
-                        $this->emit('alert', 'success', "DEFECT '".$scannedOutput->defect_type."' dengan KODE '".$this->scannedSecondaryIn."' berhasil masuk ke 'SECONDARY'");
-                    } else {
-                        $this->emit('alert', 'error', "Terjadi kesalahan.");
-                    }
-                } else {
-                    $this->emit('alert', 'warning', "QR sudah discan.");
-                }
-            } else {
-                $this->emit('alert', 'error', "Defect dengan QR '".$this->scannedSecondaryIn."' tidak ditemukan di 'SECONDARY'.");
-            }
-        } else {
-            $this->emit('alert', 'error', "QR tidak sesuai.");
-        }
-
-        $this->scannedSecondaryIn = null;
-        $this->emit('qrInputFocus', $this->mode);
-    }
-
     public function showDefectAreaImage($productTypeImage, $x, $y)
     {
         $this->productTypeImage = $productTypeImage;
@@ -209,6 +150,11 @@ class SewingSecondaryIn extends Component
         $this->productTypeImage = null;
         $this->defectPositionX = null;
         $this->defectPositionY = null;
+    }
+
+    public function updatedSelectedSecondary()
+    {
+        $this->emit("qrInputFocus", $this->mode);
     }
 
     public function render()

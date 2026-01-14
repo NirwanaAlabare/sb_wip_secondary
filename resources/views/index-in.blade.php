@@ -1,4 +1,4 @@
-@extends('layouts.index')
+@extends('layouts.index', ['mode' => 'in'])
 
 @section('custom-link')
     <style>
@@ -34,20 +34,20 @@
         });
 
         Livewire.on('showModal', (type) => {
-            if (type == "defectIn") {
-                showDefectInModal();
+            if (type == "secondaryIn") {
+                showSecondaryInModal();
             }
-            if (type == "defectOut") {
-                showDefectOutModal();
+            if (type == "secondaryOut") {
+                showSecondaryOutModal();
             }
         });
 
         Livewire.on('hideModal', (type) => {
             if (type == "defectIn") {
-                hideDefectInModal();
+                hideSecondaryInModal();
             }
-            if (type == "defectOut") {
-                hideDefectOutModal();
+            if (type == "secondaryOut") {
+                hideSecondaryOutModal();
             }
         });
 

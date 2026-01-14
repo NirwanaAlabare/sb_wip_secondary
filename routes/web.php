@@ -29,24 +29,26 @@ Route::controller(LoginController::class)->prefix('login')->group(function () {
 
 
 Route::middleware('auth')->group(function () {
-    Route::get('/', function () {
-        return view('index');
+    Route::get('/in', function () {
+        return view('index-in', ["mode" => "in"]);
     });
 
-    Route::controller(SecondaryInController::class)->prefix('secondary-in')->group(function () {
-        Route::get('/get-master-plan', 'getMasterPlan')->name("in-get-master-plan");
-        Route::get('/get-size', 'getSize')->name("in-get-size");
-        Route::get('/get-secondary-master', 'getSecondaryMaster')->name("in-get-get-secondary-master");
+    Route::get('/out', [ProductionController::class, 'index']);
 
+    Route::controller(GeneralController::class)->prefix('general')->group(function () {
+        Route::get('/get-master-plan', 'getMasterPlan')->name("get-master-plan");
+        Route::get('/get-size', 'getSize')->name("get-size");
+        Route::get('/get-secondary-master', 'getSecondaryMaster')->name("get-get-secondary-master");
+    });
+
+    Route::controller(SecondaryInController::class)->prefix('secondary-in')->middleware("role:in")->group(function () {
         Route::get('/get-secondary-in-list', 'getSecondaryInList')->name("in-get-secondary-in-list");
-        Route::get('/get-secondary-out-list', 'getDefectOutList')->name("in-get-secondary-out-list");
 
         Route::get('/get-secondary-in-out-daily', 'getSecondaryInOutDaily')->name("in-get-secondary-in-out-daily");
         Route::get('/get-secondary-in-out-detail', 'getSecondaryInOutDetail')->name("in-get-secondary-in-out-detail");
         Route::get('/get-secondary-in-out-detail-total', 'getSecondaryInOutDetailTotal')->name("in-get-secondary-in-out-detail-total");
 
         Route::post('/submit-secondary-in', 'submitSecondaryIn')->name("in-submit-secondary-in");
-        Route::post('/submit-secondary-out', 'submitDefectOut')->name("in-submit-secondary-out");
 
         Route::post('/export-secondary-in-out', 'exportSecondaryInOut')->name("in-export-secondary-in-out");
     });

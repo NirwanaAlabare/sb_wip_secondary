@@ -30,16 +30,18 @@ class LoginController extends Controller
 
         $userData = UserPassword::select('Groupp')->where('username', $credentials['username'])->where('password', $credentials['password'])->first();
 
-        if ($userData->Groupp == 'SECONDARYSEWINGIN') {
+        if ($userData->Groupp == 'SECONDARYSEWINGIN' || $userData->Groupp == 'SECONDARYSEWINGOUT' || $userData->Groupp == 'SECONDARYSEWINGINOUT') {
             if (Auth::attempt(['username' => $credentials['username'], 'password' => $credentials['password']], $remember)) {
                 $request->session()->regenerate();
 
                 session(['user_id' => Auth::user()->line_id, 'user_username' => Auth::user()->username, 'user_name' => Auth::user()->FullName]);
 
+                $redirect = $userData->Groupp == 'SECONDARYSEWINGIN' ? url('/in') : ($userData->Groupp == 'SECONDARYSEWINGOUT' ? url('/out') : url('/in'));
+
                 return array(
                     'status' => '200',
                     'message' => 'Authenticate Success',
-                    'redirect' => url('/'),
+                    'redirect' => $redirect,
                     'additional' => [],
                 );
             }

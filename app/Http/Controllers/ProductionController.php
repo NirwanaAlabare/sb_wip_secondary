@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\SignalBit\MasterPlan;
+use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 use DB;
@@ -14,63 +15,9 @@ class ProductionController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index($id)
+    public function index()
     {
-        $orderInfo = MasterPlan::selectRaw("
-                master_plan.id as id,
-                master_plan.tgl_plan as tgl_plan,
-                REPLACE(master_plan.sewing_line, '_', ' ') as sewing_line,
-                act_costing.kpno as ws_number,
-                act_costing.styleno as style_name,
-                mastersupplier.supplier as buyer_name,
-                so_det.styleno_prod as reff_number,
-                master_plan.color as color,
-                so_det.size as size,
-                so.qty as qty_order,
-                CONCAT(masterproduct.product_group, ' - ', masterproduct.product_item) as product_type
-            ")
-            ->leftJoin('act_costing', 'act_costing.id', '=', 'master_plan.id_ws')
-            ->leftJoin('so', 'so.id_cost', '=', 'act_costing.id')
-            ->leftJoin('so_det', 'so_det.id_so', '=', 'so.id')
-            ->leftJoin('mastersupplier', 'mastersupplier.id_supplier', '=', 'act_costing.id_buyer')
-            ->leftJoin('master_size_new', 'master_size_new.size', '=', 'so_det.size')
-            ->leftJoin('masterproduct', 'masterproduct.id', '=', 'act_costing.id_product')
-            ->where('so_det.cancel', 'N')
-            ->where('master_plan.cancel', 'N')
-            ->where('master_plan.id', $id)
-            ->first();
-
-        $orderWsDetailsSql = MasterPlan::selectRaw("
-                master_plan.id as id,
-                master_plan.tgl_plan as tgl_plan,
-                master_plan.color as color,
-                mastersupplier.supplier as buyer_name,
-                act_costing.styleno as style_name,
-                mastersupplier.supplier as buyer_name
-            ")
-            ->leftJoin('act_costing', 'act_costing.id', '=', 'master_plan.id_ws')
-            ->leftJoin('so', 'so.id_cost', '=', 'act_costing.id')
-            ->leftJoin('so_det', 'so_det.id_so', '=', 'so.id')
-            ->leftJoin('mastersupplier', 'mastersupplier.id_supplier', '=', 'act_costing.id_buyer')
-            ->leftJoin('master_size_new', 'master_size_new.size', '=', 'so_det.size')
-            ->leftJoin('masterproduct', 'masterproduct.id', '=', 'act_costing.id_product')
-            ->where('so_det.cancel', 'N')
-            ->where('master_plan.cancel', 'N');
-            if (Auth::user()->Groupp != "ALLSEWING") {
-                $orderWsDetailsSql->where('master_plan.sewing_line', Auth::user()->username);
-            }
-        $orderWsDetails = $orderWsDetailsSql->where('act_costing.kpno', $orderInfo->ws_number)
-            ->where('master_plan.tgl_plan', $orderInfo->tgl_plan)
-            ->groupBy(
-                'master_plan.id',
-                'master_plan.tgl_plan',
-                'master_plan.color',
-                'mastersupplier.supplier',
-                'act_costing.styleno',
-                'mastersupplier.supplier'
-            )->get();
-
-        return view('production-panel', ['orderInfo' => $orderInfo, 'orderWsDetails' => $orderWsDetails]);
+        return view('index-out', ['mode' => 'out']);
     }
 
     /**
@@ -137,5 +84,17 @@ class ProductionController extends Controller
     public function destroy(LineProductions $lineProductions)
     {
         //
+    }
+
+    public function universal() {
+        return Redirect::to('/');
+
+        return view('production-panel-universal');
+    }
+
+    public function temporary() {
+        return Redirect::to('/');
+
+        return view('production-panel-temporary');
     }
 }

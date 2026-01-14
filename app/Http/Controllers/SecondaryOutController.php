@@ -17,7 +17,7 @@ use Yajra\DataTables\Facades\DataTables;
 use Carbon\Carbon;
 use DB;
 
-class SecondaryInController extends Controller
+class SecondaryOutController extends Controller
 {
     /**
      * Display a listing of the resource.
@@ -233,6 +233,7 @@ class SecondaryInController extends Controller
             leftJoin("output_secondary_master", "output_secondary_master.id", "=", "output_secondary_in.secondary_id")->
             leftJoin("output_rfts", "output_rfts.id", "=", "output_secondary_in.rft_id")->
             where("output_secondary_master.id", $secondary)->
+            whereNotNull("output_secondary_out.id")->
             whereBetween("output_secondary_in.created_at", [$dateFrom." 00:00:00", $dateTo." 23:59:59"])->
             groupByRaw("DATE(output_secondary_in.created_at)")->
             get();
@@ -285,6 +286,7 @@ class SecondaryInController extends Controller
             whereRaw("
                 (
                     output_secondary_in.id IS NOT NULL AND
+                    output_secondary_out.id IS NOT NULL AND
                     output_rfts.id IS NOT NULL AND
                     output_secondary_master.id = '".$request->secondary."'
                 )
@@ -340,6 +342,7 @@ class SecondaryInController extends Controller
             whereRaw("
                 (
                     output_secondary_in.id IS NOT NULL AND
+                    output_secondary_out.id IS NOT NULL AND
                     output_rfts.id IS NOT NULL AND
                     output_secondary_master.id = '".$request->selectedSecondary."'
                     ".($request->line ? "AND userpassword.username LIKE '%".$request->line."%'" : "")."
@@ -351,7 +354,7 @@ class SecondaryInController extends Controller
         return array("secondaryIn" => $secondaryInOutQuery->count(), "secondaryProcess" => $secondaryInOutQuery->where("status", "WIP")->count(), "secondaryRft" => $secondaryInOutQuery->where("status", "RFT")->count(), "secondaryDefect" => $secondaryInOutQuery->where("status", "DEFECT")->count(), "secondaryReject" => $secondaryInOutQuery->where("status", "REJECT")->count());
     }
 
-    public function getSecondaryInList(Request $request)
+    public function getSecondaryOutList(Request $request)
     {
         $secondaryInSearch = "";
         if ($request->secondaryInSearch) {
@@ -369,39 +372,34 @@ class SecondaryInController extends Controller
             ";
         }
 
-        $secondaryInFilterKode = "";
-        if ($request->secondaryInFilterKode) {
-            $secondaryInFilterKode = " AND (output_rfts.kode_numbering LIKE '%".$request->secondaryInFilterKode."%' OR output_secondary_in.kode_numbering LIKE '%".$request->secondaryInFilterKode."%')";
+        $secondaryInLine = "";
+        if ($request->secondaryInLine) {
+            $secondaryInLine = "
+                AND master_plan.sewing_line = '".$request->secondaryInLine."'
+            ";
         }
 
-        $secondaryInFilterLine = "";
-        if ($request->secondaryInFilterLine) {
-            $secondaryInFilterLine = " AND master_plan.sewing_line LIKE '%".str_replace(" ", "_", $request->secondaryInFilterLine)."%' ";
-        }
-
-        $secondaryInFilterSecondary = "";
-        if ($request->secondaryFilterSecondary) {
-            $secondaryInFilterSecondary = " AND output_secondary_master.secondary LIKE '%".$request->secondaryFilterSecondary."%' ";
-        }
-
-        $secondaryInFilterWs = "";
-        if ($request->secondaryInFilterWs) {
-            $secondaryInFilterWs = "
-                AND act_costing_ws.kpno LIKE '%".$request->secondaryInFilterWs."%' OR
+        $secondaryInFilterMasterPlan = "";
+        if ($request->secondaryInFilterMasterPlan) {
+            $secondaryInFilterMasterPlan = "
+                AND
+                (
+                    act_costing_ws.kpno LIKE '%".$request->secondaryInFilterMasterPlan."%' OR
+                    act_costing.styleno LIKE '%".$request->secondaryInFilterMasterPlan."%' OR
+                    so_det.color LIKE '%".$request->secondaryInFilterMasterPlan."%'
+                )
             ";
         }
 
         $secondaryInFilterStyle = "";
         if ($request->secondaryInFilterStyle) {
             $secondaryInFilterStyle = "
-                AND act_costing.styleno LIKE '%".$request->secondaryInFilterStyle."%' OR
             ";
         }
 
         $secondaryInFilterColor = "";
         if ($request->secondaryInFilterColor) {
             $secondaryInFilterColor = "
-                AND so_det.color LIKE '%".$request->secondaryInFilterColor."%' OR
             ";
         }
 
@@ -437,7 +435,8 @@ class SecondaryInController extends Controller
                     output_secondary_master.secondary,
                     output_secondary_in.created_by_username
                 FROM
-                    `output_secondary_in`
+                    output_secondary_out
+                    LEFT JOIN `output_secondary_in` ON `output_secondary_in`.`secondary_out_id` = `output_secondary_out`.`id`
                     LEFT JOIN `output_secondary_master` ON `output_secondary_master`.`id` = `output_secondary_in`.`secondary_id`
                     LEFT JOIN `output_rfts` ON `output_rfts`.`id` = `output_secondary_in`.`rft_id`
                     LEFT JOIN `user_sb_wip` ON `user_sb_wip`.`id` = `output_rfts`.`created_by`

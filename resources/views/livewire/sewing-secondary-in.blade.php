@@ -346,120 +346,6 @@
                 secondaryInOutDetailReload();
             });
 
-            $('#select-secondary-in-line').on('change', function (e) {
-                Livewire.emit("loadingStart");
-
-                let selectedsecondaryInLine = $('#select-secondary-in-line').val();
-
-                @this.set('secondaryInLine', selectedsecondaryInLine);
-
-                getMasterPlanData();
-
-                getDefectType();
-                getDefectArea();
-            });
-
-            $('#select-defect-out-line').on('change', function (e) {
-                Livewire.emit("loadingStart");
-
-                let selectedDefectOutLine = $('#select-defect-out-line').val();
-
-                @this.set('defectOutLine', selectedDefectOutLine);
-
-                getMasterPlanData("out");
-
-                getDefectType("out");
-                getDefectArea("out");
-            });
-
-            $('#select-defect-in-master-plan').on('change', function (e) {
-                Livewire.emit("loadingStart");
-
-                let selectedDefectInMasterPlan = $('#select-defect-in-master-plan').val();
-
-                @this.set('defectInSelectedMasterPlan', selectedDefectInMasterPlan);
-
-                getSizeData();
-
-                getDefectType();
-                getDefectArea();
-            });
-
-            $('#select-defect-out-master-plan').on('change', function (e) {
-                Livewire.emit("loadingStart");
-
-                let selectedDefectOutMasterPlan = $('#select-defect-out-master-plan').val();
-
-                @this.set('defectOutSelectedMasterPlan', selectedDefectOutMasterPlan);
-
-                getSizeData("out");
-
-                getDefectType("out");
-                getDefectArea("out");
-            });
-
-            $('#select-defect-in-size').on('change', function (e) {
-                Livewire.emit("loadingStart");
-
-                let selectedDefectInSize = $('#select-defect-in-size').val();
-
-                @this.set('defectInSelectedSize', selectedDefectInSize);
-
-                getDefectType();
-                getDefectArea();
-            });
-
-            $('#select-defect-out-size').on('change', function (e) {
-                Livewire.emit("loadingStart");
-
-                let selectedDefectOutSize = $('#select-defect-out-size').val();
-
-                @this.set('defectOutSelectedSize', selectedDefectOutSize);
-
-                getDefectType("out");
-                getDefectArea("out");
-            });
-
-            $('#select-defect-in-type').on('change', function (e) {
-                Livewire.emit("loadingStart");
-
-                let selectedDefectInType = $('#select-defect-in-type').val();
-
-                @this.set('defectInSelectedType', selectedDefectInType);
-
-                getDefectArea();
-            });
-
-            $('#select-defect-out-type').on('change', function (e) {
-                Livewire.emit("loadingStart");
-
-                let selectedDefectOutType = $('#select-defect-out-type').val();
-
-                @this.set('defectOutSelectedType', selectedDefectOutType);
-
-                getDefectArea("out");
-            });
-
-            $('#select-defect-in-area').on('change', function (e) {
-                Livewire.emit("loadingStart");
-
-                let selectedDefectInType = $('#select-defect-in-area').val();
-
-                @this.set('defectInSelectedArea', selectedDefectInType);
-
-                getDefectType();
-            });
-
-            $('#select-defect-out-area').on('change', function (e) {
-                Livewire.emit("loadingStart");
-
-                let selectedDefectOutType = $('#select-defect-out-area').val();
-
-                @this.set('defectOutSelectedArea', selectedDefectOutType);
-
-                getDefectType("out");
-            });
-
             $('#button-in').on('click', async function (e) {
                 @this.changeMode("in")
             })
@@ -638,7 +524,7 @@
             }
             console.log(type, $("#secondary-in-date").val());
             $.ajax({
-                url: "{{ route("in-get-master-plan") }}",
+                url: "{{ route("get-master-plan") }}",
                 method: "GET",
                 data: {
                     date: $("#secondary-in-date").val(),
@@ -674,7 +560,7 @@
                 type = 'in';
             }
             $.ajax({
-                url: "{{ route("in-get-size") }}",
+                url: "{{ route("get-size") }}",
                 method: "GET",
                 data: {
                     master_plan: $("#select-defect-" + type + "-master-plan").val(),
