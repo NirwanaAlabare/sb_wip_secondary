@@ -54,23 +54,27 @@
                     <div class="row h-100 row-gap-3" id="content-rft">
                         <div class="col-md-6">
                             <label class="form-label">Worksheet</label>
-                            <input type="text" class="form-control" id="worksheet-rft" readonly>
+                            <input type="text" class="form-control" id="worksheet-rft" wire:model="worksheetRft" readonly>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Style</label>
-                            <input type="text" class="form-control" id="style-rft" readonly>
+                            <input type="text" class="form-control" id="style-rft" wire:model="styleRft" readonly>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Color</label>
-                            <input type="text" class="form-control" id="color-rft" readonly>
+                            <input type="text" class="form-control" id="color-rft" wire:model="colorRft" readonly>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Size</label>
-                            <input type="text" class="form-control" id="size-rft" readonly>
+                            <input type="text" class="form-control" id="size-rft" wire:model="sizeRft" readonly>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Kode QR</label>
-                            <input type="text" class="form-control" id="kode-rft" readonly>
+                            <input type="text" class="form-control" id="kode-rft" wire:model="kodeRft" readonly>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Line</label>
+                            <input type="text" class="form-control" id="line-rft" wire:model="lineRft" readonly>
                         </div>
                     </div>
                 </div>

@@ -24,6 +24,13 @@ class Defect extends Component
 {
     use WithFileUploads;
 
+    public $worksheetDefect;
+    public $styleDefect;
+    public $colorDefect;
+    public $sizeDefect;
+    public $kodeDefect;
+    public $lineDefect;
+
     public $sizeInput;
     public $sizeInputText;
     public $noCutInput;
@@ -90,8 +97,15 @@ class Defect extends Component
         return false;
     }
 
-    public function mount(SessionManager $session, $orderWsDetailSizes)
+    public function mount(SessionManager $session)
     {
+        $this->worksheetDefect = null;
+        $this->styleDefect = null;
+        $this->colorDefect = null;
+        $this->sizeDefect = null;
+        $this->kodeDefect = null;
+        $this->lineDefect = null;
+
         $this->sizeInput = null;
         $this->sizeInputText = null;
         $this->noCutInput = null;
@@ -202,7 +216,12 @@ class Defect extends Component
 
     public function selectDefectAreaPosition()
     {
-        $masterPlan = DB::connection('mysql_sb')->table('master_plan')->select('gambar')->find($this->orderInfo->id);
+        $masterPlan = DB::connection('mysql_sb')->table('output_secondary_in')->
+            select("master_plan.gambar")->
+            leftJoin("output_rfts", "output_rfts.id", "=", "output_secondary_in.rft_id")->
+            leftJoin("master_plan", "master_plan.id", "=", "output_rfts.master_plan_id")->
+            where("kode_numbering", $numberingInput)->
+            first();
 
         if ($masterPlan) {
             $this->emit('showSelectDefectArea', $masterPlan->gambar);
@@ -287,7 +306,15 @@ class Defect extends Component
 
                     $this->validateOnly('sizeInput');
 
-                    $this->emit('showModal', 'defect', 'regular');
+                    $scannedDetail = $secondaryInData->rft;
+                    if ($scannedDetail) {
+                        $this->worksheetDefect = $scannedDetail->so_det->so->actCosting->kpno;
+                        $this->styleDefect = $scannedDetail->so_det->so->actCosting->styleno;
+                        $this->colorDefect = $scannedDetail->so_det->color;
+                        $this->sizeDefect = $scannedDetail->so_det->size;
+                        $this->kodeDefect = $scannedDetail->kode_numbering;
+                        $this->lineDefect = $scannedDetail->userLine->username;
+                    }
                 } else {
                     $this->emit('qrInputFocus', 'defect');
 
@@ -310,7 +337,7 @@ class Defect extends Component
                 $numberingData = DB::connection("mysql_nds")->table("year_sequence")->selectRaw("year_sequence.*, year_sequence.id_year_sequence no_cut_size")->where("id_year_sequence", $validatedData["numberingInput"])->first();
 
                 if ($numberingData) {
-                    $secondaryInData = DB::connection('mysql_sb')->table('output_secondary_in')->where("kode_numbering", $validatedData["numberingInput"])->count();
+                    $secondaryInData = DB::connection('mysql_sb')->table('output_secondary_in')->where("kode_numbering", $validatedData["numberingInput"])->first();
 
                     if ($secondaryInData) {
                         $insertDefect = SecondaryOut::create([
@@ -319,7 +346,8 @@ class Defect extends Component
                             'status' => 'defect',
                             'created_at' => Carbon::now(),
                             'updated_at' => Carbon::now(),
-                            'created_by' => Auth::user()->id
+                            'created_by' => Auth::user()->line_id,
+                            'created_by_username' => Auth::user()->username
                         ]);
 
                         if ($insertDefect) {
@@ -460,6 +488,15 @@ class Defect extends Component
         $this->emit('showModal', 'defect', 'rapid');
     }
 
+    public function clearForm() {
+        $this->worksheetDefect = "";
+        $this->styleDefect = "";
+        $this->colorDefect = "";
+        $this->sizeDefect = "";
+        $this->kodeDefect = "";
+        $this->lineDefect = "";
+    }
+
     public function submitRapidInput() {
         $rapidDefectFiltered = [];
         $success = 0;
@@ -467,20 +504,30 @@ class Defect extends Component
 
         if ($this->rapidDefect && count($this->rapidDefect) > 0) {
             for ($i = 0; $i < count($this->rapidDefect); $i++) {
-                if (((DB::connection('mysql_sb')->table('output_defects')->where('kode_numbering', $this->rapidDefect[$i]['numberingInput'])->count() + DB::connection('mysql_sb')->table('output_rfts')->where('kode_numbering', $this->rapidDefect[$i]['numberingInput'])->count() + DB::connection('mysql_sb')->table('output_rejects')->where('kode_numbering', $this->rapidDefect[$i]['numberingInput'])->count()) < 1) && ($this->orderWsDetailSizes->where('so_det_id', $this->rapidDefect[$i]['sizeInput'])->count() > 0)) {
-                    array_push($rapidDefectFiltered, [
-                        'master_plan_id' => $this->orderInfo->id,
-                        'so_det_id' => $this->rapidDefect[$i]['sizeInput'],
-                        'no_cut_size' => $this->rapidDefect[$i]['noCutInput'],
+
+                $secondaryInData = DB::connection('mysql_sb')->table('output_secondary_in')->where("kode_numbering", $this->rapidDefect[$i]['numberingInput'])->first();
+
+                if ($secondaryInData && ((DB::connection("mysql_sb")->table("output_secondary_out")->where('kode_numbering', $this->rapidDefect[$i]['numberingInput'])->count() < 1))) {
+
+                    $createSecondaryOut = SecondaryOut::create([
                         'kode_numbering' => $this->rapidDefect[$i]['numberingInput'],
+                        'secondary_in_id' => $secondaryInData->id,
+                        'status' => 'defect',
+                        'created_at' => Carbon::now(),
+                        'updated_at' => Carbon::now(),
+                        'created_by' => Auth::user()->line_id,
+                        'created_by_username' => Auth::user()->username,
+                    ]);
+
+                    array_push($rapidDefectFiltered, [
+                        'secondary_out_id' => $createSecondaryOut->id,
                         'defect_type_id' => $this->defectType,
                         'defect_area_id' => $this->defectArea,
                         'defect_area_x' => $this->defectAreaPositionX,
                         'defect_area_y' => $this->defectAreaPositionY,
-                        'status' => 'NORMAL',
-                        'created_at' => Carbon::now(),
-                        'updated_at' => Carbon::now(),
-                        'created_by' => Auth::user()->id
+                        'created_by' => Auth::user()->line_id,
+                        'created_by_username' => Auth::user()->username,
+                        'status' => 'defect'
                     ]);
 
                     $success += 1;
@@ -490,7 +537,7 @@ class Defect extends Component
             }
         }
 
-        $rapidDefectInsert = DefectModel::insert($rapidDefectFiltered);
+        $rapidDefectInsert = SecondaryOutDefect::insert($rapidDefectFiltered);
 
         if ($success > 0) {
             $this->emit('alert', 'success', $success." output berhasil terekam. ");
@@ -523,14 +570,6 @@ class Defect extends Component
             }
         }
 
-        $this->orderInfo = $session->get('orderInfo', $this->orderInfo);
-        $this->orderWsDetailSizes = $session->get('orderWsDetailSizes', $this->orderWsDetailSizes);
-
-        $this->selectedColor = $this->orderInfo->id;
-        $this->selectedColorName = $this->orderInfo->color;
-
-        $this->emit('setSelectedSizeSelect2', $this->selectedColor);
-
         // Defect types
         $this->productTypes = ProductType::orderBy('product_type')->get();
 
@@ -541,7 +580,7 @@ class Defect extends Component
         $this->defectAreas = DefectArea::leftJoin(DB::raw("(select defect_area_id, count(id) total_defect from output_defects where updated_at between '".date("Y-m-d", strtotime(date("Y-m-d").' -10 days'))." 00:00:00' and '".date("Y-m-d")." 23:59:59' group by defect_area_id) as defects"), "defects.defect_area_id", "=", "output_defect_areas.id")->whereRaw("(hidden IS NULL OR hidden != 'Y')")->orderBy('defect_area')->get();
 
         // Defect
-        $this->defect = collect(DB::select("select output_defects.*, so_det.size, COUNT(output_defects.id) output from `output_defects` left join `so_det` on `so_det`.`id` = `output_defects`.`so_det_id` where `master_plan_id` = '".$this->orderInfo->id."' and `defect_status` = 'defect' group by so_det.id"));
+        $this->defect = collect(DB::select("select output_secondary_out.*, so_det.size, COUNT(output_secondary_out.id) output from `output_secondary_out` left join `output_secondary_in` on `output_secondary_in`.`id` = `output_secondary_out`.`secondary_in_id` left join output_rfts on output_rfts.id = output_secondary_in.rft_id left join `so_det` on `so_det`.`id` = `output_rfts`.`so_det_id` where output_secondary_out.status = 'defect' group by so_det.id"));
 
         return view('livewire.secondary-out.defect');
     }

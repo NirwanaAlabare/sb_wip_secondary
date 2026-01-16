@@ -11,7 +11,7 @@
 
 @section('content')
     {{-- @livewire('sewing-secondary-out') --}}
-    @include('production-panel', ['orderInfo' => $orderInfo, 'orderWsDetails' => $orderWsDetails])
+    @include('production-panel')
 @endsection
 
 @section('custom-script')

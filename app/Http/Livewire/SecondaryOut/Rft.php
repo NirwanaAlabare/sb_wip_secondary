@@ -21,6 +21,13 @@ class Rft extends Component
     public $rapidRftCount;
     public $rft;
 
+    public $worksheetRft;
+    public $styleRft;
+    public $colorRft;
+    public $sizeRft;
+    public $kodeRft;
+    public $lineRft;
+
     protected $rules = [
         'sizeInput' => 'required',
         'noCutInput' => 'required',
@@ -49,6 +56,13 @@ class Rft extends Component
         $this->rapidRft = [];
         $this->rapidRftCount = 0;
         $this->submitting = false;
+
+        $this->worksheetRft = null;
+        $this->styleRft = null;
+        $this->colorRft = null;
+        $this->sizeRft = null;
+        $this->kodeRft = null;
+        $this->lineRft = null;
     }
 
     public function dehydrate()
@@ -76,7 +90,7 @@ class Rft extends Component
 
     public function updateOutput()
     {
-        $this->rft = collect(DB::select("select output_rfts.*, so_det.size, COUNT(output_rfts.id) output from `output_rfts` left join `so_det` on `so_det`.`id` = `output_rfts`.`so_det_id` where `master_plan_id` = '".$this->orderInfo->id."' and `status` = 'NORMAL' group by so_det.id"));
+        $this->rft = collect(DB::select("select output_rfts.*, so_det.size, COUNT(output_rfts.id) output from `output_rfts` left join `so_det` on `so_det`.`id` = `output_rfts`.`so_det_id` where `status` = 'NORMAL' group by so_det.id"));
     }
 
     public function clearInput()
@@ -123,7 +137,7 @@ class Rft extends Component
                     return;
                 }
 
-                $secondaryInData = DB::connection('mysql_sb')->table('output_secondary_in')->where("kode_numbering", $numberingInput)->first();
+                $secondaryInData = SewingSecondaryIn::where("kode_numbering", $numberingInput)->first();
                 if ($secondaryInData) {
                     $insertRft = SewingSecondaryOut::create([
                         'kode_numbering' => $secondaryInData->kode_numbering,
@@ -138,6 +152,18 @@ class Rft extends Component
                     if ($insertRft) {
                         $this->emit('alert', 'success', "1 output berukuran ".$this->sizeInputText." berhasil terekam.");
 
+                        $scannedDetail = $secondaryInData->rft;
+
+                        if ($scannedDetail) {
+                            $this->worksheetRft = $scannedDetail->so_det->so->actCosting->kpno;
+                            $this->styleRft = $scannedDetail->so_det->so->actCosting->styleno;
+                            $this->colorRft = $scannedDetail->so_det->color;
+                            $this->sizeRft = $scannedDetail->so_det->size;
+                            $this->kodeRft = $scannedDetail->kode_numbering;
+                            $this->lineRft = $scannedDetail->userLine->username;
+                        }
+
+                        // Clear
                         $this->sizeInput = '';
                         $this->sizeInputText = '';
                         $this->noCutInput = '';
@@ -203,7 +229,7 @@ class Rft extends Component
                 // One Straight Format
                 $numberingData = DB::connection("mysql_nds")->table("year_sequence")->selectRaw("year_sequence.*, year_sequence.id_year_sequence no_cut_size")->where("id_year_sequence", $this->rapidRft[$i]['numberingInput'])->first();
 
-                $secondaryInData = DB::connection('mysql_sb')->table('output_secondary_in')->where("kode_numbering", $this->rapidRft[$i]['numberingInput'])->count();
+                $secondaryInData = DB::connection('mysql_sb')->table('output_secondary_in')->where("kode_numbering", $this->rapidRft[$i]['numberingInput'])->first();
 
                 if ($secondaryInData && ((DB::connection("mysql_sb")->table("output_secondary_out")->where('kode_numbering', $this->rapidRft[$i]['numberingInput'])->count() < 1))) {
                     array_push($rapidRftFiltered, [
@@ -263,7 +289,7 @@ class Rft extends Component
         }
 
         // Rft
-        $this->rft = collect(DB::select("select output_secondary_out.*, so_det.size, COUNT(output_secondary_out.id) output from `output_secondary_out` where `status` = 'rft'"));
+        $this->rft = collect(DB::select("select output_secondary_out.*, COUNT(output_secondary_out.id) output from `output_secondary_out` where `status` = 'rft'"));
 
         return view('livewire.secondary-out.rft');
     }

@@ -37,30 +37,28 @@
     <div class="production-panel row row-gap-3" id="production-panel">
         @if ($panels)
             <div class="row row-gap-3">
-                @if ($orderDate == date("Y-m-d"))
-                    <div class="col-md-6" id="rft-panel">
-                        <div class="d-flex h-100">
-                            <div class="card-custom bg-rft d-flex justify-content-between align-items-center w-75 h-100" {{-- onclick="toRft()" --}} wire:click='toRft'>
-                                <div class="d-flex flex-column gap-3">
-                                    <p class="text-light"><i class="fa-regular fa-circle-check fa-2xl"></i></p>
-                                    <p class="text-light">RFT</p>
-                                </div>
-                                <p class="text-light fs-1">{{ $outputRft }}</p>
+                <div class="col-md-6" id="rft-panel">
+                    <div class="d-flex h-100">
+                        <div class="card-custom bg-rft d-flex justify-content-between align-items-center w-75 h-100" {{-- onclick="toRft()" --}} wire:click='toRft'>
+                            <div class="d-flex flex-column gap-3">
+                                <p class="text-light"><i class="fa-regular fa-circle-check fa-2xl"></i></p>
+                                <p class="text-light">RFT</p>
                             </div>
+                            <p class="text-light fs-1">{{ $outputRft }}</p>
                         </div>
                     </div>
-                    <div class="col-md-6" id="defect-panel">
-                        <div class="d-flex h-100">
-                            <div class="card-custom bg-defect d-flex justify-content-between align-items-center w-75 h-100" {{-- onclick="toDefect()" --}} wire:click='toDefect'>
-                                <div class="d-flex flex-column gap-3">
-                                    <p class="text-light"><i class="fa-regular fa-circle-exclamation fa-2xl"></i></p>
-                                    <p class="text-light">DEFECT</p>
-                                </div>
-                                <p class="text-light fs-1">{{ $outputDefect }}</p>
+                </div>
+                <div class="col-md-6" id="defect-panel">
+                    <div class="d-flex h-100">
+                        <div class="card-custom bg-defect d-flex justify-content-between align-items-center w-75 h-100" {{-- onclick="toDefect()" --}} wire:click='toDefect'>
+                            <div class="d-flex flex-column gap-3">
+                                <p class="text-light"><i class="fa-regular fa-circle-exclamation fa-2xl"></i></p>
+                                <p class="text-light">DEFECT</p>
                             </div>
+                            <p class="text-light fs-1">{{ $outputDefect }}</p>
                         </div>
                     </div>
-                @endif
+                </div>
                 <div class="col-md-6" id="reject-panel">
                     <div class="d-flex h-100">
                         <div class="card-custom bg-reject d-flex justify-content-between align-items-center w-75 h-100" {{-- onclick="toReject()" --}} wire:click='toReject'>
@@ -210,20 +208,16 @@
             // This arrangement can be altered based on how we want the date's format to appear.
             let currentDate = `${year}-${month}-${day}`;
 
-            console.log(@this.orderDate, currentDate);
-
-            if (@this.orderDate != currentDate) {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Anda sedang mengakses Master Plan yang sudah berlalu',
-                    html: `Master Plan yang anda akses berasal dari tanggal <br> <b>'`+ document.getElementById('tanggal').value +`'</b> <br> `,
-                    showConfirmButton: true,
-                    confirmButtonText: 'Oke',
-                    confirmButtonColor: '#6531a0'
-                }).then((result) => {
-                    // window.location.href = '{{ route('index') }}';
-                });
-            }
+            Swal.fire({
+                icon: 'warning',
+                title: 'Anda sedang mengakses Master Plan yang sudah berlalu',
+                html: `Master Plan yang anda akses berasal dari tanggal <br> <b>'`+ document.getElementById('tanggal').value +`'</b> <br> `,
+                showConfirmButton: true,
+                confirmButtonText: 'Oke',
+                confirmButtonColor: '#6531a0'
+            }).then((result) => {
+                // window.location.href = '{{ route('index') }}';
+            });
         }
 
         var scannedQrCode = "";

@@ -5,18 +5,18 @@ namespace App\Models\SignalBit;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class SewingSecondaryOut extends Model
+class SewingSecondaryOutDefect extends Model
 {
     use HasFactory;
 
     protected $connection = 'mysql_sb';
 
-    protected $table = 'output_secondary_out';
+    protected $table = 'output_secondary_out_defect';
 
     protected $guarded=[];
 
-    public function secondaryIn()
+    public function secondaryOut()
     {
-        return $this->belongsTo(SewingSecondaryIns::class, 'secondary_in_id', 'id');
+        return $this->belongsTo(SewingSecondaryOut::class, 'secondary_out_id', 'id');
     }
 }

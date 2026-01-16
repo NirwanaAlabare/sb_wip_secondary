@@ -14,4 +14,9 @@ class SewingSecondaryIn extends Model
     protected $table = 'output_secondary_in';
 
     protected $guarded=[];
+
+    public function rft()
+    {
+        return $this->belongsTo(Rft::class, 'rft_id', 'id');
+    }
 }

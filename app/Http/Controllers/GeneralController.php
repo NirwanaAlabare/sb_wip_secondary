@@ -17,8 +17,16 @@ use Yajra\DataTables\Facades\DataTables;
 use Carbon\Carbon;
 use DB;
 
-class SecondaryInController extends Controller
+class GeneralController extends Controller
 {
+    public function index(Request $request) {
+        $userData = Auth::user();
+
+        $redirect = $userData->Groupp == 'SECONDARYSEWINGIN' ? url('/in') : ($userData->Groupp == 'SECONDARYSEWINGOUT' ? url('/out') : url('/in'));
+
+        return redirect()->to($redirect);
+    }
+
     public function getMasterPlan(Request $request) {
         $additionalQuery = "";
         if ($request->date) {

@@ -2,7 +2,7 @@
 
 @section('content')
     {{-- Production Panel Livewire --}}
-    @livewire('production-panel', ['orderInfo' => $orderInfo, 'orderWsDetails' => $orderWsDetails])
+    @livewire('secondary-out.production-panel')
 
     {{-- Select Defect Area --}}
     <div class="select-defect-area" id="select-defect-area">

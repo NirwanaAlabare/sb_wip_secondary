@@ -28,6 +28,30 @@ class Rft extends Model
         return $this->belongsTo(MasterPlan::class, 'master_plan_id', 'id');
     }
 
+    public function soDet()
+    {
+        return $this->belongsTo(SoDet::class, 'so_det_id', 'id');
+    }
+
+    public function userLine()
+    {
+        return $this->hasOneThrough(
+
+            UserPassword::class,
+
+            UserSbWip::class,
+
+            'line_id', // Foreign key on the user_sb_wip table...
+
+            'line_id', // Foreign key on the userpassword table...
+
+            'created_by', // Local key on the rft table...
+
+            'id' // Local key on the user_sb_wip table...
+
+        );
+    }
+
     public function rework()
     {
         return $this->hasOne(Rework::class, 'id', 'rework_id');

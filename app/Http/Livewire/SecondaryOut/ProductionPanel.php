@@ -207,17 +207,6 @@ class ProductionPanel extends Component
 
     public function render(SessionManager $session)
     {
-        // Keep this data with session
-        $this->orderInfo = $session->get("orderInfo", $this->orderInfo);
-        $this->orderWsDetails = $session->get("orderWsDetails", $this->orderWsDetails);
-        $this->orderWsDetailSizes = $session->get("orderWsDetailSizes", $this->orderWsDetailSizes);
-
-        $this->orderDate = $this->orderInfo->tgl_plan;
-        $this->selectedColor = $this->orderInfo->id;
-        $this->selectedColorName = $this->orderInfo->color;
-
-        $this->emit('setSelectedSizeSelect2', $this->selectedColor);
-
         // Get total output
         $this->outputRft = DB::connection('mysql_sb')->table('output_rfts')->
             where('master_plan_id', "-")->

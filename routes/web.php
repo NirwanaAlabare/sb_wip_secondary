@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\GeneralController;
 use App\Http\Controllers\ProductionController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\DefectInOutController;
@@ -29,6 +30,8 @@ Route::controller(LoginController::class)->prefix('login')->group(function () {
 
 
 Route::middleware('auth')->group(function () {
+    Route::get('/', [GeneralController::class, 'index']);
+
     Route::get('/in', function () {
         return view('index-in', ["mode" => "in"]);
     });
