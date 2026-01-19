@@ -30,31 +30,14 @@ class Reject extends Component
     public $kodeReject;
     public $lineReject;
 
-    public $output;
     public $sizeInput;
     public $sizeInputText;
     public $noCutInput;
     public $numberingInput;
-    public $reject;
 
     public $rapidReject;
     public $rapidRejectCount;
 
-    public $searchDefect;
-    public $searchReject;
-    public $defectImage;
-    public $defectPositionX;
-    public $defectPositionY;
-    public $allDefectListFilter;
-    public $allDefectImage;
-    public $allDefectPosition;
-    public $massQty;
-    public $massSize;
-    public $massDefectType;
-    public $massDefectTypeName;
-    public $massDefectArea;
-    public $massDefectAreaName;
-    public $massSelectedDefect;
     public $info;
 
     public $defectTypes;
@@ -87,15 +70,10 @@ class Reject extends Component
     ];
 
     protected $listeners = [
-        'updateWsDetailSizes' => 'updateWsDetailSizes',
-        'updateOutputReject' => 'updateOutput',
         'setAndSubmitInputReject' => 'setAndSubmitInput',
         'toInputPanel' => 'resetError',
 
         'submitInputReject' => 'submitInput',
-        'submitReject' => 'submitReject',
-        'submitAllReject' => 'submitAllReject',
-        'cancelReject' => 'cancelReject',
         'hideDefectAreaImageClear' => 'hideDefectAreaImage',
 
         'setRejectAreaPosition' => 'setRejectAreaPosition',
@@ -150,24 +128,6 @@ class Reject extends Component
         $this->emit('loadRejectPageJs');
     }
 
-    public function updateWsDetailSizes($panel)
-    {
-        $this->sizeInput = null;
-        $this->sizeInputText = null;
-        $this->noCutInput = null;
-        $this->numberingInput = null;
-
-        if ($panel == 'reject') {
-            $this->emit('qrInputFocus', 'reject');
-        }
-    }
-
-    public function updateOutput()
-    {
-        // Reject
-        $this->reject = collect(DB::select("select output_secondary_out.*, COUNT(output_secondary_out.id) output from `output_secondary_out` where `status` = 'reject'"));
-    }
-
     public function clearInput()
     {
         $this->sizeInput = null;
@@ -181,7 +141,7 @@ class Reject extends Component
             select("master_plan.gambar")->
             leftJoin("output_rfts", "output_rfts.id", "=", "output_secondary_in.rft_id")->
             leftJoin("master_plan", "master_plan.id", "=", "output_rfts.master_plan_id")->
-            where("kode_numbering", $numberingInput)->
+            where("output_secondary_in.kode_numbering", $this->numberingInput)->
             first();
 
         if ($masterPlan) {
@@ -217,7 +177,7 @@ class Reject extends Component
             //     }
             // }
 
-            // One Straight Format
+            // One Straight Source
             $numberingData = DB::connection("mysql_nds")->table("year_sequence")->selectRaw("year_sequence.*, year_sequence.id_year_sequence no_cut_size")->where("id_year_sequence", $numberingInput)->first();
 
             if ($numberingData) {
@@ -232,10 +192,12 @@ class Reject extends Component
             }
         }
 
+        // Get Secondary OUT Defect Detail
         $scannedDefectData = SecondaryOutDefect::where("kode_numbering", $numberingInput)->first();
 
-        // check defect
+        // When it is Defect
         if ($scannedDefectData) {
+            // When Secondary OUT Defect Detail is still Defect
             if ($scannedDefectData->status == "defect") {
                 $this->rejectType = $scannedDefectData->defect_type_id;
                 $this->rejectArea = $scannedDefectData->defect_area_id;
@@ -250,7 +212,9 @@ class Reject extends Component
 
                 $this->emit('alert', 'warning', "Kode qr sudah discan di REWORK.");
             }
-        } else {
+        }
+        // When it's not
+        else {
             $validation = Validator::make([
                 'sizeInput' => $this->sizeInput,
                 'noCutInput' => $this->noCutInput,
@@ -274,6 +238,7 @@ class Reject extends Component
 
                 $validation->validate();
             } else {
+                // Get Secondary IN
                 $secondaryInData = SewingSecondaryIn::where("kode_numbering", $numberingInput)->first();
 
                 if ($secondaryInData) {
@@ -288,6 +253,7 @@ class Reject extends Component
 
                     $this->validateOnly('sizeInput');
 
+                    // Get Detail
                     $scannedDetail = $secondaryInData->rft;
                     if ($scannedDetail) {
                         $this->worksheetReject = $scannedDetail->so_det->so->actCosting->kpno;
@@ -338,10 +304,12 @@ class Reject extends Component
 
         $continue = false;
 
+        // Get Secondary OUT Defect Detail
         $scannedDefectData = SecondaryOutDefect::where("kode_numbering", $numberingInput)->first();
 
-        // check defect
+        // When it is Defect
         if ($scannedDefectData) {
+            // Update Secondary OUT Defect Detail
             if ($scannedDefectData->status == "defect") {
                 $scannedDefectData->status = "rejected";
                 $scannedDefectData->save();
@@ -357,8 +325,11 @@ class Reject extends Component
 
                 $this->emit('alert', 'error', "Data DEFECT status sudah : <b>'".$scannedDefectData->status."'</b>");
             }
-        } else {
-            $secondaryInData = DB::connection('mysql_sb')->table('output_secondary_in')->where("kode_numbering")->first();
+        }
+        // When it's not
+        else {
+            // Get Secondary IN Data
+            $secondaryInData = DB::connection('mysql_sb')->table('output_secondary_in')->where("kode_numbering", $numberingInput)->first();
 
             if ($secondaryInData) {
                 $continue = true;
@@ -372,23 +343,23 @@ class Reject extends Component
         // continue
         if ($continue) {
 
-            // Get Secondary Out Data
+            // Get Secondary OUT Data
             $secondaryOutData = null;
             if ($scannedDefectData) {
-                // Update Secondary Out Status
+                // Update Secondary OUT Defect
                 SecondaryOut::where("kode_numbering", $this->numberingInput)->
                     update([
                         'status' => 'reject'
                     ]);
 
-                // Get Secondary Out Data
+                // Get Secondary OUT Defect
                 $secondaryOutData = SecondaryOut::where("kode_numbering", $this->numberingInput);
             } else {
-                // Get Secondary In
+                // Get Secondary IN
                 $secondaryInData = DB::connection('mysql_sb')->table('output_secondary_in')->where("kode_numbering", $this->numberingInput)->first();
 
                 if ($secondaryInData) {
-                    // Create Secondary Out Data
+                    // Create Secondary OUT Reject
                     $secondaryOutData = SecondaryOut::create([
                         'kode_numbering' => $secondaryInData->kode_numbering,
                         'secondary_in_id' => $secondaryInData->id,
@@ -404,6 +375,7 @@ class Reject extends Component
             }
 
             if ($secondaryOutData) {
+                // Create Secondary OUT Reject Detail
                 $insertReject = SecondaryOutReject::create([
                     "secondary_out_id" => $secondaryOut ? $secondaryOut->id : null,
                     'kode_numbering' => $this->numberingInput,
@@ -412,8 +384,6 @@ class Reject extends Component
                     'defect_area_x' => $this->rejectAreaPositionX,
                     'defect_area_y' => $this->rejectAreaPositionY,
                     'status' => $scannedDefectData ? 'defect' : 'mati',
-                    'created_at' => Carbon::now(),
-                    'updated_at' => Carbon::now(),
                     'created_by' => Auth::user()->line_id,
                     'created_by_username' => Auth::user()->username,
                 ]);
@@ -421,7 +391,6 @@ class Reject extends Component
                 if ($insertReject) {
                     $this->emit('alert', 'success', "1 output berukuran ".$this->sizeInputText." berhasil terekam.");
                     $this->emit('hideModal', 'reject', 'regular');
-                    $this->emit('triggerDashboard', Auth::user()->line->username, Carbon::now()->format('Y-m-d'));
 
                     $this->sizeInput = '';
                     $this->sizeInputText = '';
@@ -500,28 +469,28 @@ class Reject extends Component
                 //     }
                 // }
 
-                // One Straight Format
+                // One Straight Source
                 $numberingData = DB::connection("mysql_nds")->table("year_sequence")->selectRaw("year_sequence.*, year_sequence.id_year_sequence no_cut_size")->where("id_year_sequence", $this->rapidReject[$i]['numberingInput'])->first();
 
                 if ((DB::connection("mysql_sb")->table("output_secondary_out")->where('kode_numbering', $this->rapidDefect[$i]['numberingInput'])->count() < 1)) {
 
-                    // Get Secondary Out Data
+                    // Get Secondary OUT Data
                     $secondaryOutData = null;
                     if ($scannedDefectData) {
-                        // Update Secondary Out Status
+                        // Update Secondary OUT
                         SecondaryOut::where("kode_numbering", $this->rapidReject[$i]['numberingInput'])->
                             update([
                                 'status' => 'reject'
                             ]);
 
-                        // Get Secondary Out Data
+                        // Get Secondary OUT
                         $secondaryOutData = SecondaryOut::where("kode_numbering", $this->rapidReject[$i]['numberingInput']);
                     } else {
-                        // Get Secondary In
+                        // Get Secondary IN
                         $secondaryInData = DB::connection('mysql_sb')->table('output_secondary_in')->where("kode_numbering")->first();
 
                         if ($secondaryInData) {
-                            // Create Secondary Out Data
+                            // Create Secondary OUT
                             $secondaryOutData = SecondaryOut::create([
                                 'kode_numbering' => $secondaryInData->kode_numbering,
                                 'secondary_in_id' => $secondaryInData->id,
@@ -559,12 +528,11 @@ class Reject extends Component
             }
         }
 
+        // Create Mass Secondary OUT Reject Detail
         $rapidRejectInsert = RejectModel::insert($rapidRejectFiltered);
 
         if ($success > 0) {
             $this->emit('alert', 'success', $success." output berhasil terekam. ");
-
-            $this->emit('triggerDashboard', Auth::user()->line->username, Carbon::now()->format('Y-m-d'));
         }
 
         if ($fail > 0) {
@@ -602,16 +570,6 @@ class Reject extends Component
         $this->defectPositionY = null;
     }
 
-    public function updatingSearchDefect()
-    {
-        $this->resetPage('defectsPage');
-    }
-
-    public function updatingSearchReject()
-    {
-        $this->resetPage('rejectsPage');
-    }
-
     public function render(SessionManager $session)
     {
         $this->emit('loadRejectPageJs');
@@ -629,18 +587,12 @@ class Reject extends Component
             }
         }
 
-        // Get total output
-        $this->output = DB::connection('mysql_sb')->table('output_secondary_out')->where('status', 'reject')->count();
-
-        // Reject
-        $this->reject = collect(DB::select("select output_defects.*, so_det.size, COUNT(output_defects.id) output from `output_defects` left join `so_det` on `so_det`.`id` = `output_defects`.`so_det_id` where `status` = 'NORMAL' group by so_det.id"));
-
         // Defect types
         $this->defectTypes = DB::table("output_defect_types")->leftJoin(DB::raw("(select reject_type_id, count(id) total_reject from output_rejects where updated_at between '".date("Y-m-d", strtotime(date("Y-m-d").' -10 days'))." 00:00:00' and '".date("Y-m-d")." 23:59:59' group by reject_type_id) as rejects"), "rejects.reject_type_id", "=", "output_defect_types.id")->whereRaw("(hidden IS NULL OR hidden != 'Y')")->orderBy('defect_type')->get();
 
         // Defect areas
         $this->defectAreas = DB::table("output_defect_areas")->leftJoin(DB::raw("(select reject_area_id, count(id) total_reject from output_rejects where updated_at between '".date("Y-m-d", strtotime(date("Y-m-d").' -10 days'))." 00:00:00' and '".date("Y-m-d")." 23:59:59' group by reject_area_id) as rejects"), "rejects.reject_area_id", "=", "output_defect_areas.id")->whereRaw("(hidden IS NULL OR hidden != 'Y')")->orderBy('defect_area')->get();
 
-        return view('livewire.secondary-out.reject', ['rejects' => $rejects, 'allDefectList' => $allDefectList]);
+        return view('livewire.secondary-out.reject');
     }
 }

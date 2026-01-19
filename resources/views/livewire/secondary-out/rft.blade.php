@@ -1,11 +1,11 @@
 <div>
-    <div class="loading-container-fullscreen" wire:loading wire:target="setAndSubmitInput, submitInput, updateOrder, submitRapidInput">
+    <div class="loading-container-fullscreen" wire:loading wire:target="setAndSubmitInput, submitInput, submitRapidInput">
         <div class="loading-container">
             <div class="loading"></div>
         </div>
     </div>
     {{-- Production Input --}}
-    <div class="production-input row row-gap-3">
+    <div class="production-input row row-gap-3 mb-3">
         <div class="col-md-4">
             <div class="card h-100">
                 <div class="card-header d-flex justify-content-between align-items-center bg-rft text-light">
@@ -20,7 +20,7 @@
                         </div>
                     @enderror
                     {{-- <div id="rft-reader" width="600px"></div> --}}
-                    <input type="text" class="qty-input" id="scannedItemRft" name="scannedItemRft">
+                    <input type="text" class="qty-input h-100" id="scannedItemRft" name="scannedItemRft">
                 </div>
             </div>
         </div>
@@ -30,12 +30,7 @@
                     <div class="d-flex justify-content-end align-items-center gap-1">
                         <div class="d-flex align-items-center gap-3 me-3">
                             <p class="mb-1 fs-5">RFT</p>
-                            <p class="mb-1 fs-5">:</p>
-                            <p id="rft-qty" class="mb-1 fs-5">{{ $rft->sum('output') }}</p>
                         </div>
-                        <button class="btn btn-dark" wire:click="$emit('preSubmitUndo', 'rft')" disabled>
-                            <i class="fa-regular fa-rotate-left"></i>
-                        </button>
                         {{-- <button class="btn btn-dark">
                             <i class="fa-regular fa-gear"></i>
                         </button> --}}
@@ -78,6 +73,35 @@
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Log --}}
+    <div class="card" wire:ignore>
+        <div class="card-body">
+            <div class="mb-3">
+                <input type="date" class="form-control" id="rft-log-date" name="rft-log-date">
+            </div>
+            <div class="table-responsive">
+                <table class="table table-bordered w-100" id="rft-secondary-out-list-table">
+                    <thead>
+                        <tr>
+                            <th>Kode Numbering</th>
+                            <th>No. WS</th>
+                            <th>Style</th>
+                            <th>Color</th>
+                            <th>Size</th>
+                            <th>Line</th>
+                            <th>Secondary</th>
+                            <th>Total</th>
+                            <th>Created By</th>
+                            <th>Created At</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
@@ -208,7 +232,6 @@
 
         Livewire.on('toInputPanel', async (type) => {
             if (type == 'rft') {
-                @this.updateOutput();
                 scannedItemRftInput.focus();
             }
         });
@@ -224,5 +247,75 @@
 
             $("#scannedItemRft").focus();
         }
+
+        // RFT Secondary Out List
+        let rftSecondaryOutListTable = $("#rft-secondary-out-list-table").DataTable({
+            serverSide: true,
+            processing: true,
+            ordering: false,
+            searching: false,
+            paging: true,
+            lengthChange: false,
+            ajax: {
+                url: '{{ route('out-get-secondary-out-log') }}',
+                dataType: 'json',
+                data: function (d) {
+                    d.date = $("#rft-log-date").val();
+                    d.status = "rft";
+                }
+            },
+            columns: [
+                {
+                    data: 'kode_numbering',
+                },
+                {
+                    data: 'ws',
+                },
+                {
+                    data: 'style',
+                },
+                {
+                    data: 'color',
+                },
+                {
+                    data: 'size',
+                },
+                {
+                    data: 'sewing_line',
+                },
+                {
+                    data: 'secondary',
+                },
+                {
+                    data: 'output',
+                },
+                {
+                    data: 'created_by_username',
+                },
+                {
+                    data: 'secondary_out_time',
+                },
+            ],
+            columnDefs: [
+                // {
+                //     targets: [0],
+                //     className: "text-nowrap text-center align-middle",
+                //     render: (data, type, row, meta) => {
+                //         return meta.row+1;
+                //     }
+                // },
+                {
+                    targets: "_all",
+                    className: "text-nowrap text-center align-middle"
+                },
+            ],
+            rowCallback: function (row, data, iDisplayIndex) {
+                var info = this.api().page.info();
+                var page = info.page;
+                var length = info.length;
+                var index = (page * length + (iDisplayIndex + 1));
+                $('td:eq(0)', row).html(index); // Assuming the first column is for the index
+            }
+        });
     </script>
 @endpush

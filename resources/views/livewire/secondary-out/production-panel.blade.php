@@ -1,5 +1,5 @@
 <div wire:poll.visible.30000ms>
-    <div class="loading-container-fullscreen" wire:loading wire:target="toRft, toDefect, toDefectHistory, toReject, toRework, toProductionPanel, preSubmitUndo, submitUndo, updateOrder, toProductionPanel, setAndSubmitInput, submitInput">
+    <div class="loading-container-fullscreen" wire:loading wire:target="toRft, toDefect, toReject, toRework, toProductionPanel, setAndSubmitInput, submitInput">
         <div class="loading-container">
             <div class="loading"></div>
         </div>
@@ -18,28 +18,58 @@
     </div>
 
     {{-- Production Info --}}
-    <div class="production-info row row-gap-1 align-items-center mb-3">
-        <div class="col-md">
-            <table class="table w-100">
-                <thead>
-                    <th>WIP</th>
-                    <th>DEFECT</th>
-                </thead>
-                <tbody>
-                    <td>...</td>
-                    <td>...</td>
-                </tbody>
-            </table>
+    {{-- <div class="production-info row row-gap-3 justify-content-end align-items-center mb-3">
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title text-center">WIP</h5>
+                </div>
+                <div class="card-body">
+                    <h5 class="text-center">0</h5>
+                </div>
+            </div>
         </div>
-    </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title text-center">DEFECT</h5>
+                </div>
+                <div class="card-body">
+                    <h5 class="text-center">0</h5>
+                </div>
+            </div>
+        </div>
+    </div> --}}
 
     {{-- Production Panels --}}
     <div class="production-panel row row-gap-3" id="production-panel">
         @if ($panels)
+            <div class="production-panel-info row row-gap-3 justify-content-end align-items-center mb-3">
+                <div class="col-md-3">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title text-center">WIP</h5>
+                        </div>
+                        <div class="card-body">
+                            <h5 class="text-center">0</h5>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title text-center">DEFECT</h5>
+                        </div>
+                        <div class="card-body">
+                            <h5 class="text-center">0</h5>
+                        </div>
+                    </div>
+                </div>
+            </div>
             <div class="row row-gap-3">
                 <div class="col-md-6" id="rft-panel">
                     <div class="d-flex h-100">
-                        <div class="card-custom bg-rft d-flex justify-content-between align-items-center w-75 h-100" {{-- onclick="toRft()" --}} wire:click='toRft'>
+                        <div class="card-custom bg-rft d-flex justify-content-between align-items-center w-100 h-100" {{-- onclick="toRft()" --}} wire:click='toRft'>
                             <div class="d-flex flex-column gap-3">
                                 <p class="text-light"><i class="fa-regular fa-circle-check fa-2xl"></i></p>
                                 <p class="text-light">RFT</p>
@@ -50,7 +80,7 @@
                 </div>
                 <div class="col-md-6" id="defect-panel">
                     <div class="d-flex h-100">
-                        <div class="card-custom bg-defect d-flex justify-content-between align-items-center w-75 h-100" {{-- onclick="toDefect()" --}} wire:click='toDefect'>
+                        <div class="card-custom bg-defect d-flex justify-content-between align-items-center w-100 h-100" {{-- onclick="toDefect()" --}} wire:click='toDefect'>
                             <div class="d-flex flex-column gap-3">
                                 <p class="text-light"><i class="fa-regular fa-circle-exclamation fa-2xl"></i></p>
                                 <p class="text-light">DEFECT</p>
@@ -61,7 +91,7 @@
                 </div>
                 <div class="col-md-6" id="reject-panel">
                     <div class="d-flex h-100">
-                        <div class="card-custom bg-reject d-flex justify-content-between align-items-center w-75 h-100" {{-- onclick="toReject()" --}} wire:click='toReject'>
+                        <div class="card-custom bg-reject d-flex justify-content-between align-items-center w-100 h-100" {{-- onclick="toReject()" --}} wire:click='toReject'>
                             <div class="d-flex flex-column gap-3">
                                 <p class="text-light"><i class="fa-regular fa-circle-xmark fa-2xl"></i></p>
                                 <p class="text-light">REJECT</p>
@@ -72,7 +102,7 @@
                 </div>
                 <div class="col-md-6" id="rework-panel">
                     <div class="d-flex h-100">
-                        <div class="card-custom bg-rework d-flex justify-content-between align-items-center w-75 h-100" {{-- onclick="toRework()" --}} wire:click='toRework'>
+                        <div class="card-custom bg-rework d-flex justify-content-between align-items-center w-100 h-100" {{-- onclick="toRework()" --}} wire:click='toRework'>
                             <div class="d-flex flex-column gap-3">
                                 <p class="text-light"><i class="fa-regular fa-arrows-rotate fa-2xl"></i></p>
                                 <p class="text-light">REWORK</p>
@@ -173,24 +203,11 @@
 
 @push('scripts')
     <script>
-        document.addEventListener("DOMContentLoaded", () => {
-            restrictYesterdayMasterPlan();
-        });
-
         window.addEventListener("focus", () => {
-            document.getElementById("loading").classList.remove("d-none");
-
-            $('#scannedItemRft').attr("disabled", true);
-            $('#scannedDefectItem').attr("disabled", true);
-            $('#scannedRejectItem').attr("disabled", true);
-            $('#scannedReworkItem').attr("disabled", true);
-
-            restrictYesterdayMasterPlan();
+            // Reset State when losing focus
 
             $('#defect-modal').modal("hide");
             $('#reject-modal').modal("hide");
-
-            Livewire.emit('updateOrder');
         });
 
         // Pad 2 Digits
@@ -198,28 +215,7 @@
             return n < 10 ? '0' + n : n
         }
 
-        // Restrict Yesterday Master Plan
-        function restrictYesterdayMasterPlan() {
-            let date = new Date();
-            let day = pad(date.getDate());
-            let month = pad(date.getMonth() + 1);
-            let year = date.getFullYear();
-
-            // This arrangement can be altered based on how we want the date's format to appear.
-            let currentDate = `${year}-${month}-${day}`;
-
-            Swal.fire({
-                icon: 'warning',
-                title: 'Anda sedang mengakses Master Plan yang sudah berlalu',
-                html: `Master Plan yang anda akses berasal dari tanggal <br> <b>'`+ document.getElementById('tanggal').value +`'</b> <br> `,
-                showConfirmButton: true,
-                confirmButtonText: 'Oke',
-                confirmButtonColor: '#6531a0'
-            }).then((result) => {
-                // window.location.href = '{{ route('index') }}';
-            });
-        }
-
+        // When Scanned on Production Panel
         var scannedQrCode = "";
         document.addEventListener("keydown", function(e) {
             let textInput = e.key || String.fromCharCode(e.keyCode);
@@ -231,8 +227,6 @@
 
                     if (scannedQrCode.length > 3) {
                         let i = 0;
-                        let j = 1;
-                        let k = 2;
 
                         if (scannedQrCode.includes('WIP')) {
                             @this.scannedNumberingCode = scannedQrCode;

@@ -7,6 +7,7 @@ use App\Http\Controllers\ProductionController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\DefectInOutController;
 use App\Http\Controllers\SecondaryInController;
+use App\Http\Controllers\SecondaryOutController;
 
 /*
 |--------------------------------------------------------------------------
@@ -54,6 +55,17 @@ Route::middleware('auth')->group(function () {
         Route::post('/submit-secondary-in', 'submitSecondaryIn')->name("in-submit-secondary-in");
 
         Route::post('/export-secondary-in-out', 'exportSecondaryInOut')->name("in-export-secondary-in-out");
+    });
+
+    Route::controller(SecondaryOutController::class)->prefix('secondary-out')->middleware("role:out")->group(function () {
+        Route::get('/get-secondary-out-list', 'getSecondaryOutList')->name("out-get-secondary-out-list");
+        Route::get('/get-secondary-out-log', 'getSecondaryOutLog')->name("out-get-secondary-out-log");
+
+        Route::get('/get-secondary-in-out-daily', 'getSecondaryInOutDaily')->name("out-get-secondary-in-out-daily");
+        Route::get('/get-secondary-in-out-detail', 'getSecondaryInOutDetail')->name("out-get-secondary-in-out-detail");
+        Route::get('/get-secondary-in-out-detail-total', 'getSecondaryInOutDetailTotal')->name("out-get-secondary-in-out-detail-total");
+
+        Route::post('/export-secondary-in-out', 'exportSecondaryInOut')->name("out-export-secondary-in-out");
     });
 
     // Route::controller(DefectInOutController::class)->prefix('defect-in-out')->group(function () {

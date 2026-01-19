@@ -13,6 +13,8 @@ use Str;
 
 class Rft extends Component
 {
+    public $dateRft;
+
     public $sizeInput;
     public $sizeInputText;
     public $numberingCode;
@@ -41,14 +43,14 @@ class Rft extends Component
     ];
 
     protected $listeners = [
-        'updateWsDetailSizes' => 'updateWsDetailSizes',
-        'updateOutputRft' => 'updateOutput',
         'setAndSubmitInputRft' => 'setAndSubmitInput',
         'toInputPanel' => 'resetError'
     ];
 
     public function mount(SessionManager $session)
     {
+        $this->dateRft = null;
+
         $this->sizeInput = null;
         $this->sizeInputText = null;
         $this->noCutInput = null;
@@ -88,11 +90,6 @@ class Rft extends Component
         return false;
     }
 
-    public function updateOutput()
-    {
-        $this->rft = collect(DB::select("select output_rfts.*, so_det.size, COUNT(output_rfts.id) output from `output_rfts` left join `so_det` on `so_det`.`id` = `output_rfts`.`so_det_id` where `status` = 'NORMAL' group by so_det.id"));
-    }
-
     public function clearInput()
     {
         $this->sizeInput = null;
@@ -118,7 +115,7 @@ class Rft extends Component
             //     }
             // }
 
-            // One Straight Format
+            // One Straight Source
             $numberingData = DB::connection("mysql_nds")->table("year_sequence")->selectRaw("year_sequence.*, year_sequence.id_year_sequence no_cut_size")->where("id_year_sequence", $numberingInput)->first();
 
             if ($numberingData) {
@@ -137,6 +134,7 @@ class Rft extends Component
                     return;
                 }
 
+                // Check Secondary IN
                 $secondaryInData = SewingSecondaryIn::where("kode_numbering", $numberingInput)->first();
                 if ($secondaryInData) {
                     $insertRft = SewingSecondaryOut::create([
@@ -152,6 +150,7 @@ class Rft extends Component
                     if ($insertRft) {
                         $this->emit('alert', 'success', "1 output berukuran ".$this->sizeInputText." berhasil terekam.");
 
+                        // Stored Secondary IN Data
                         $scannedDetail = $secondaryInData->rft;
 
                         if ($scannedDetail) {
@@ -226,12 +225,13 @@ class Rft extends Component
                 //     }
                 // }
 
-                // One Straight Format
+                // One Straight Source
                 $numberingData = DB::connection("mysql_nds")->table("year_sequence")->selectRaw("year_sequence.*, year_sequence.id_year_sequence no_cut_size")->where("id_year_sequence", $this->rapidRft[$i]['numberingInput'])->first();
 
+                // Check Secondary IN
                 $secondaryInData = DB::connection('mysql_sb')->table('output_secondary_in')->where("kode_numbering", $this->rapidRft[$i]['numberingInput'])->first();
 
-                if ($secondaryInData && ((DB::connection("mysql_sb")->table("output_secondary_out")->where('kode_numbering', $this->rapidRft[$i]['numberingInput'])->count() < 1))) {
+                if ($secondaryInData && (/*Check Secondary OUT*/(DB::connection("mysql_sb")->table("output_secondary_out")->where('kode_numbering', $this->rapidRft[$i]['numberingInput'])->count() < 1))) {
                     array_push($rapidRftFiltered, [
                         'kode_numbering' => $secondaryInData->kode_numbering,
                         'secondary_in_id' => $secondaryInData->id,
@@ -253,8 +253,6 @@ class Rft extends Component
 
         if ($success > 0) {
             $this->emit('alert', 'success', $success." output berhasil terekam. ");
-
-            $this->emit('triggerDashboard', Auth::user()->line->username, Carbon::now()->format('Y-m-d'));
         }
 
         if ($fail > 0) {
@@ -287,9 +285,6 @@ class Rft extends Component
                 $this->emit('alert', 'error', $message);
             }
         }
-
-        // Rft
-        $this->rft = collect(DB::select("select output_secondary_out.*, COUNT(output_secondary_out.id) output from `output_secondary_out` where `status` = 'rft'"));
 
         return view('livewire.secondary-out.rft');
     }

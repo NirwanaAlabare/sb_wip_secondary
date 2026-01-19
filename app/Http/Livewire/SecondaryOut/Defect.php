@@ -133,11 +133,6 @@ class Defect extends Component
         $this->resetErrorBag();
     }
 
-    public function updateOutput()
-    {
-        $this->defect = collect(DB::select("select output_secondary_out.*, COUNT(output_secondary_out.id) output from `output_secondary_out` where `status` = 'defect'"));
-    }
-
     public function updatedproductTypeImageAdd()
     {
         $this->validate([
@@ -220,7 +215,7 @@ class Defect extends Component
             select("master_plan.gambar")->
             leftJoin("output_rfts", "output_rfts.id", "=", "output_secondary_in.rft_id")->
             leftJoin("master_plan", "master_plan.id", "=", "output_rfts.master_plan_id")->
-            where("kode_numbering", $numberingInput)->
+            where("output_secondary_in.kode_numbering", $this->numberingInput)->
             first();
 
         if ($masterPlan) {
@@ -256,7 +251,7 @@ class Defect extends Component
             //     }
             // }
 
-            // One Straight Format
+            // One Straight Source
             $numberingData = DB::connection("mysql_nds")->table("year_sequence")->selectRaw("year_sequence.*, year_sequence.id_year_sequence no_cut_size")->where("id_year_sequence", $numberingInput)->first();
 
             if ($numberingData) {
@@ -293,28 +288,28 @@ class Defect extends Component
 
                 $validation->validate();
             } else {
-                if ($this->orderWsDetailSizes->where('so_det_id', $this->sizeInput)->count() > 0) {
-                    $this->emit('clearSelectDefectAreaPoint');
+                $this->emit('clearSelectDefectAreaPoint');
 
-                    $this->defectType = null;
-                    $this->defectArea = null;
-                    $this->productType = null;
-                    $this->defectAreaPositionX = null;
-                    $this->defectAreaPositionY = null;
+                $this->defectType = null;
+                $this->defectArea = null;
+                $this->productType = null;
+                $this->defectAreaPositionX = null;
+                $this->defectAreaPositionY = null;
 
-                    $this->numberingInput = $numberingInput;
+                $this->numberingInput = $numberingInput;
 
-                    $this->validateOnly('sizeInput');
+                $this->validateOnly('sizeInput');
 
-                    $scannedDetail = $secondaryInData->rft;
-                    if ($scannedDetail) {
-                        $this->worksheetDefect = $scannedDetail->so_det->so->actCosting->kpno;
-                        $this->styleDefect = $scannedDetail->so_det->so->actCosting->styleno;
-                        $this->colorDefect = $scannedDetail->so_det->color;
-                        $this->sizeDefect = $scannedDetail->so_det->size;
-                        $this->kodeDefect = $scannedDetail->kode_numbering;
-                        $this->lineDefect = $scannedDetail->userLine->username;
-                    }
+                // Show Secondary IN Data
+                $scannedDetail = $secondaryInData->rft;
+
+                if ($scannedDetail) {
+                    $this->worksheetDefect = $scannedDetail->so_det->so->actCosting->kpno;
+                    $this->styleDefect = $scannedDetail->so_det->so->actCosting->styleno;
+                    $this->colorDefect = $scannedDetail->so_det->color;
+                    $this->sizeDefect = $scannedDetail->so_det->size;
+                    $this->kodeDefect = $scannedDetail->kode_numbering;
+                    $this->lineDefect = $scannedDetail->userLine->username;
                 } else {
                     $this->emit('qrInputFocus', 'defect');
 
@@ -332,68 +327,71 @@ class Defect extends Component
             return;
         }
 
-        if ($this->orderInfo->tgl_plan == Carbon::now()->format('Y-m-d')) {
-            if ($validatedData["numberingInput"]) {
-                $numberingData = DB::connection("mysql_nds")->table("year_sequence")->selectRaw("year_sequence.*, year_sequence.id_year_sequence no_cut_size")->where("id_year_sequence", $validatedData["numberingInput"])->first();
+        if ($validatedData["numberingInput"]) {
+            // Get QR Data
+            $numberingData = DB::connection("mysql_nds")->table("year_sequence")->selectRaw("year_sequence.*, year_sequence.id_year_sequence no_cut_size")->where("id_year_sequence", $validatedData["numberingInput"])->first();
 
-                if ($numberingData) {
-                    $secondaryInData = DB::connection('mysql_sb')->table('output_secondary_in')->where("kode_numbering", $validatedData["numberingInput"])->first();
+            if ($numberingData) {
 
-                    if ($secondaryInData) {
-                        $insertDefect = SecondaryOut::create([
-                            'kode_numbering' => $secondaryInData->kode_numbering,
-                            'secondary_in_id' => $secondaryInData->id,
-                            'status' => 'defect',
-                            'created_at' => Carbon::now(),
-                            'updated_at' => Carbon::now(),
+                // Get Secondary IN Data
+                $secondaryInData = DB::connection('mysql_sb')->table('output_secondary_in')->where("kode_numbering", $validatedData["numberingInput"])->first();
+
+                if ($secondaryInData) {
+
+                    // Create Secondary Out Defect
+                    $insertDefect = SecondaryOut::create([
+                        'kode_numbering' => $secondaryInData->kode_numbering,
+                        'secondary_in_id' => $secondaryInData->id,
+                        'status' => 'defect',
+                        'created_at' => Carbon::now(),
+                        'updated_at' => Carbon::now(),
+                        'created_by' => Auth::user()->line_id,
+                        'created_by_username' => Auth::user()->username
+                    ]);
+
+                    if ($insertDefect) {
+                        // Create Secondary Out Defect Detail
+                        $insertDefectDetail = SecondaryOutDefect::create([
+                            'secondary_out_id' => $insertDefect->id,
+                            'defect_type_id' => $validatedData['defectType'],
+                            'defect_area_id' => $validatedData['defectArea'],
+                            'defect_area_x' => $validatedData['defectAreaPositionX'],
+                            'defect_area_y' => $validatedData['defectAreaPositionY'],
                             'created_by' => Auth::user()->line_id,
-                            'created_by_username' => Auth::user()->username
+                            'created_by_username' => Auth::user()->username,
+                            'status' => 'defect',
                         ]);
 
-                        if ($insertDefect) {
-                            $insertDefectDetail = SecondaryOutDefect::create([
-                                'secondary_out_id' => $insertDefect->id,
-                                'defect_type_id' => $validatedData['defectType'],
-                                'defect_area_id' => $validatedData['defectArea'],
-                                'defect_area_x' => $validatedData['defectAreaPositionX'],
-                                'defect_area_y' => $validatedData['defectAreaPositionY'],
-                                'created_by' => Auth::user()->line_id,
-                                'created_by_username' => Auth::user()->username,
-                                'status' => 'defect',
-                            ]);
+                        $type = DefectType::select('defect_type')->find($this->defectType);
+                        $area = DefectArea::select('defect_area')->find($this->defectArea);
+                        $getSize = DB::table('so_det')
+                            ->select('id', 'size')
+                            ->where('id', $this->sizeInput)
+                            ->first();
 
-                            $type = DefectType::select('defect_type')->find($this->defectType);
-                            $area = DefectArea::select('defect_area')->find($this->defectArea);
-                            $getSize = DB::table('so_det')
-                                ->select('id', 'size')
-                                ->where('id', $this->sizeInput)
-                                ->first();
+                        $this->emit('alert', 'success', "1 output DEFECT berukuran ".$getSize->size." dengan jenis defect : ".$type->defect_type." dan area defect : ".$area->defect_area." berhasil terekam.");
+                        $this->emit('hideModal', 'defect', 'regular');
 
-                            $this->emit('alert', 'success', "1 output DEFECT berukuran ".$getSize->size." dengan jenis defect : ".$type->defect_type." dan area defect : ".$area->defect_area." berhasil terekam.");
-                            $this->emit('hideModal', 'defect', 'regular');
-
-                            $this->sizeInput = '';
-                            $this->sizeInputText = '';
-                            $this->noCutInput = '';
-                            $this->numberingInput = '';
-                        } else {
-                            $this->emit('alert', 'error', "Terjadi kesalahan. Output tidak berhasil direkam.");
-                        }
-
-                        $this->emit('qrInputFocus', 'defect');
+                        $this->sizeInput = '';
+                        $this->sizeInputText = '';
+                        $this->noCutInput = '';
+                        $this->numberingInput = '';
+                    } else {
+                        $this->emit('alert', 'error', "Terjadi kesalahan. Output tidak berhasil direkam.");
                     }
-                } else {
-                    $this->emit('alert', 'error', "Terjadi kesalahan. QR tidak sesuai.");
+
+                    $this->emit('qrInputFocus', 'defect');
                 }
             } else {
                 $this->emit('alert', 'error', "Terjadi kesalahan. QR tidak sesuai.");
             }
         } else {
-            $this->emit('alert', 'error', "Tidak dapat input backdate. Harap refresh browser anda.");
+            $this->emit('alert', 'error', "Terjadi kesalahan. QR tidak sesuai.");
         }
     }
 
-    public function setAndSubmitInput($scannedNumbering, $scannedSize, $scannedSizeText, $scannedNoCut) {
+    public function setAndSubmitInput($scannedNumbering, $scannedSize, $scannedSizeText, $scannedNoCut)
+    {
         $this->numberingInput = $scannedNumbering;
         $this->sizeInput = $scannedSize;
         $this->sizeInputText = $scannedSizeText;
@@ -402,7 +400,8 @@ class Defect extends Component
         $this->preSubmitInput($scannedNumbering);
     }
 
-    public function pushRapidDefect($numberingInput, $sizeInput, $sizeInputText) {
+    public function pushRapidDefect($numberingInput, $sizeInput, $sizeInputText)
+    {
         $exist = false;
 
         if (count($this->rapidDefect) < 100) {
@@ -513,8 +512,6 @@ class Defect extends Component
                         'kode_numbering' => $this->rapidDefect[$i]['numberingInput'],
                         'secondary_in_id' => $secondaryInData->id,
                         'status' => 'defect',
-                        'created_at' => Carbon::now(),
-                        'updated_at' => Carbon::now(),
                         'created_by' => Auth::user()->line_id,
                         'created_by_username' => Auth::user()->username,
                     ]);
@@ -578,9 +575,6 @@ class Defect extends Component
 
         // Defect areas
         $this->defectAreas = DefectArea::leftJoin(DB::raw("(select defect_area_id, count(id) total_defect from output_defects where updated_at between '".date("Y-m-d", strtotime(date("Y-m-d").' -10 days'))." 00:00:00' and '".date("Y-m-d")." 23:59:59' group by defect_area_id) as defects"), "defects.defect_area_id", "=", "output_defect_areas.id")->whereRaw("(hidden IS NULL OR hidden != 'Y')")->orderBy('defect_area')->get();
-
-        // Defect
-        $this->defect = collect(DB::select("select output_secondary_out.*, so_det.size, COUNT(output_secondary_out.id) output from `output_secondary_out` left join `output_secondary_in` on `output_secondary_in`.`id` = `output_secondary_out`.`secondary_in_id` left join output_rfts on output_rfts.id = output_secondary_in.rft_id left join `so_det` on `so_det`.`id` = `output_rfts`.`so_det_id` where output_secondary_out.status = 'defect' group by so_det.id"));
 
         return view('livewire.secondary-out.defect');
     }

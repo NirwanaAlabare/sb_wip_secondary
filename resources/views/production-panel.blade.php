@@ -1,4 +1,11 @@
-@extends('layouts.index', ['orderDate' => $orderInfo->tgl_plan])
+@extends('layouts.index')
+
+@section('custom-link')
+    <!-- DataTables -->
+    <link rel="stylesheet" href="{{ asset('datatables/datatables-bs4/css/dataTables.bootstrap4.min.css') }}">
+    <link rel="stylesheet" href="{{ asset('datatables/datatables-responsive/css/responsive.bootstrap4.min.css') }}">
+    <link rel="stylesheet" href="{{ asset('datatables/datatables-buttons/css/buttons.bootstrap4.min.css') }}">
+@endsection
 
 @section('content')
     {{-- Production Panel Livewire --}}
@@ -88,6 +95,13 @@
 @endsection
 
 @section('custom-script')
+    <!-- DataTables  & Plugins -->
+    <script src="{{ asset('datatables/datatables/jquery.dataTables.min.js') }}"></script>
+    <script src="{{ asset('datatables/datatables-bs4/js/dataTables.bootstrap4.min.js') }}"></script>
+    <script src="{{ asset('datatables/datatables-responsive/js/dataTables.responsive.min.js') }}"></script>
+    <script src="{{ asset('datatables/datatables-responsive/js/responsive.bootstrap4.min.js') }}"></script>
+    <script src="{{ asset('datatables/datatables-rowsgroup/dataTables.rowsGroup.js') }}"></script>
+
     <script>
         document.addEventListener("DOMContentLoaded", () => {
             $('.select2').select2({
@@ -122,8 +136,6 @@
                 showAddDefectTypeModal();
             } else if (type == 'addDefectArea') {
                 showAddDefectAreaModal();
-            } else if (type == 'massRework') {
-                showMassReworkModal();
             } else if (type == 'rapidRft') {
                 showRapidRftModal();
             } else if (type == 'rapidDefect') {
@@ -154,8 +166,6 @@
                 hideAddDefectTypeModal();
             } else if (type == 'addDefectArea') {
                 hideAddDefectAreaModal();
-            } else if (type == 'massRework') {
-                hideMassReworkModal();
             }
         });
 
@@ -171,282 +181,6 @@
             $('#input-type').addClass('bg-'+type+' w-100 fs-6 py-1 mb-0 rounded text-center text-light fw-bold');
             $('#input-type').html(type.toUpperCase());
             $('#input-type').show();
-        });
-
-        // REWORK ABOUT
-        Livewire.on('preSubmitAllRework', () => {
-            Swal.fire({
-                icon: 'info',
-                title: 'REWORK semua DEFECT',
-                html: `Yakin akan me-REWORK semua DEFECT?`,
-                showConfirmButton: true,
-                showDenyButton: true,
-                confirmButtonText: 'Rework',
-                confirmButtonColor: '#447efa',
-                denyButtonText: 'Batal',
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    Livewire.emit('submitAllRework');
-                } else if (result.isDenied) {
-                    Swal.fire({
-                        icon: 'info',
-                        title: 'Submit REWORK dibatalkan',
-                        confirmButtonText: 'Ok',
-                        confirmButtonColor: '#447efa',
-                    });
-                }
-            });
-        });
-
-        Livewire.on('preSubmitRework', (defectId, defectSize, defectType, defectArea, defectImage, defectX, defectY) => {
-            Swal.fire({
-                icon: 'info',
-                title: 'REWORK defect ini?',
-                html: `<table class="table text-start w-auto mx-auto">
-                            <tr>
-                                <td>ID<td>
-                                <td>:<td>
-                                <td>`+defectId+`<td>
-                            <tr>
-                            <tr>
-                                <td>Size<td>
-                                <td>:<td>
-                                <td>`+defectSize+`<td>
-                            <tr>
-                            <tr>
-                                <td>Defect Type<td>
-                                <td>:<td>
-                                <td>`+defectType+`<td>
-                            <tr>
-                            <tr>
-                                <td>Defect Area<td>
-                                <td>:<td>
-                                <td>`+defectArea+`<td>
-                            <tr>
-                            <tr>
-                                <td>Defect Image<td>
-                                <td>:<td>
-                                <td>
-                                    <button type="button" class="btn btn-dark" onclick="onShowDefectAreaImage('`+defectImage+`', '`+defectX+`', '`+defectY+`')">
-                                        <i class="fa-regular fa-image"></i>
-                                    </button>
-                                <td>
-                            <tr>
-                        </table>`,
-                showConfirmButton: true,
-                showDenyButton: true,
-                confirmButtonText: 'Rework',
-                confirmButtonColor: '#447efa',
-                denyButtonText: 'Batal',
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    Livewire.emit('submitRework', defectId);
-                } else if (result.isDenied) {
-                    Swal.fire({
-                        icon: 'info',
-                        title: 'Submit REWORK dibatalkan',
-                        confirmButtonText: 'Ok',
-                        confirmButtonColor: '#447efa',
-                    });
-                }
-            });
-        });
-
-        Livewire.on('preCancelRework', (reworkId, defectId, defectSize, defectType, defectArea, defectImage, defectX, defectY) => {
-            Swal.fire({
-                icon: 'warning',
-                title: 'Kembalikan REWORK ini ke DEFECT?',
-                html: `<table class="table text-start w-auto mx-auto">
-                            <tr>
-                                <td>Rework ID<td>
-                                <td>:<td>
-                                <td>`+reworkId+`<td>
-                            <tr>
-                                <tr>
-                                <td>Defect ID<td>
-                                <td>:<td>
-                                <td>`+defectId+`<td>
-                            <tr>
-                            <tr>
-                                <td>Size<td>
-                                <td>:<td>
-                                <td>`+defectSize+`<td>
-                            <tr>
-                            <tr>
-                                <td>Defect Type<td>
-                                <td>:<td>
-                                <td>`+defectType+`<td>
-                            <tr>
-                            <tr>
-                                <td>Defect Area<td>
-                                <td>:<td>
-                                <td>`+defectArea+`<td>
-                            <tr>
-                            <tr>
-                                <td>Defect Image<td>
-                                <td>:<td>
-                                <td>
-                                    <button type="button" class="btn btn-dark" onclick="onShowDefectAreaImage('`+defectImage+`', '`+defectX+`', '`+defectY+`')">
-                                        <i class="fa-regular fa-image"></i>
-                                    </button>
-                                <td>
-                            <tr>
-                        </table>`,
-                showConfirmButton: true,
-                showDenyButton: true,
-                confirmButtonText: 'Defect',
-                confirmButtonColor: '#ff971f',
-                denyButtonText: 'Batal',
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    Livewire.emit('cancelRework', reworkId, defectId);
-                } else if (result.isDenied) {
-                    Swal.fire({
-                        icon: 'info',
-                        title: 'Pengembalian REWORK KE DEFECT dibatalkan',
-                        confirmButtonText: 'Ok',
-                        confirmButtonColor: '#447efa',
-                    });
-                }
-            });
-        });
-
-        // REJECT ABOUT
-        Livewire.on('preSubmitAllReject', () => {
-            Swal.fire({
-                icon: 'info',
-                title: 'REJECT semua DEFECT',
-                html: `Yakin akan me-REJECT semua DEFECT?`,
-                showConfirmButton: true,
-                showDenyButton: true,
-                confirmButtonText: 'Reject',
-                confirmButtonColor: '#fa4456',
-                denyButtonText: 'Batal',
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    Livewire.emit('submitAllReject');
-                } else if (result.isDenied) {
-                    Swal.fire({
-                        icon: 'info',
-                        title: 'Submit REJECT dibatalkan',
-                        confirmButtonText: 'Ok',
-                        confirmButtonColor: '#fa4456',
-                    });
-                }
-            });
-        });
-
-        Livewire.on('preSubmitReject', (defectId, defectSize, defectType, defectArea, defectImage, defectX, defectY) => {
-            Swal.fire({
-                icon: 'info',
-                title: 'REJECT defect ini?',
-                html: `<table class="table text-start w-auto mx-auto">
-                            <tr>
-                                <td>ID<td>
-                                <td>:<td>
-                                <td>`+defectId+`<td>
-                            <tr>
-                            <tr>
-                                <td>Size<td>
-                                <td>:<td>
-                                <td>`+defectSize+`<td>
-                            <tr>
-                            <tr>
-                                <td>Defect Type<td>
-                                <td>:<td>
-                                <td>`+defectType+`<td>
-                            <tr>
-                            <tr>
-                                <td>Defect Area<td>
-                                <td>:<td>
-                                <td>`+defectArea+`<td>
-                            <tr>
-                            <tr>
-                                <td>Defect Image<td>
-                                <td>:<td>
-                                <td>
-                                    <button type="button" class="btn btn-dark" onclick="onShowDefectAreaImage('`+defectImage+`', '`+defectX+`', '`+defectY+`')">
-                                        <i class="fa-regular fa-image"></i>
-                                    </button>
-                                <td>
-                            <tr>
-                        </table>`,
-                showConfirmButton: true,
-                showDenyButton: true,
-                confirmButtonText: 'Reject',
-                confirmButtonColor: '#fa4456',
-                denyButtonText: 'Batal',
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    Livewire.emit('submitReject', defectId);
-                } else if (result.isDenied) {
-                    Swal.fire({
-                        icon: 'info',
-                        title: 'Submit REJECT dibatalkan',
-                        confirmButtonText: 'Ok',
-                        confirmButtonColor: '#fa4456',
-                    });
-                }
-            });
-        });
-
-        Livewire.on('preCancelReject', (rejectId, defectId, defectSize, defectType, defectArea, defectImage, defectX, defectY) => {
-            Swal.fire({
-                icon: 'warning',
-                title: 'Kembalikan REJECT ini ke DEFECT?',
-                html: `<table class="table text-start w-auto mx-auto">
-                            <tr>
-                                <td>Reject ID<td>
-                                <td>:<td>
-                                <td>`+rejectId+`<td>
-                            <tr>
-                                <tr>
-                                <td>Defect ID<td>
-                                <td>:<td>
-                                <td>`+defectId+`<td>
-                            <tr>
-                            <tr>
-                                <td>Size<td>
-                                <td>:<td>
-                                <td>`+defectSize+`<td>
-                            <tr>
-                            <tr>
-                                <td>Defect Type<td>
-                                <td>:<td>
-                                <td>`+defectType+`<td>
-                            <tr>
-                            <tr>
-                                <td>Defect Area<td>
-                                <td>:<td>
-                                <td>`+defectArea+`<td>
-                            <tr>
-                            <tr>
-                                <td>Defect Image<td>
-                                <td>:<td>
-                                <td>
-                                    <button type="button" class="btn btn-dark" onclick="onShowDefectAreaImage('`+defectImage+`', '`+defectX+`', '`+defectY+`')">
-                                        <i class="fa-regular fa-image"></i>
-                                    </button>
-                                <td>
-                            <tr>
-                        </table>`,
-                showConfirmButton: true,
-                showDenyButton: true,
-                confirmButtonText: 'Defect',
-                confirmButtonColor: '#ff971f',
-                denyButtonText: 'Batal',
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    Livewire.emit('cancelReject', rejectId, defectId);
-                } else if (result.isDenied) {
-                    Swal.fire({
-                        icon: 'info',
-                        title: 'Pengembalian REJECT KE DEFECT dibatalkan',
-                        confirmButtonText: 'Ok',
-                        confirmButtonColor: '#447efa',
-                    });
-                }
-            });
         });
 
         // Select Defect Area Position
@@ -692,39 +426,6 @@
                 $('#loading-undo').removeClass('hidden');
                 $('#content-undo').addClass('hidden');
             }
-        });
-
-        // var intervalTrigger = setInterval(() => {
-        //     triggerDashboard('{{ Auth::user()->line->username }}', '{{ date('Y-m-d') }}');
-        // }, 10000);
-
-        // function triggerDashboard(line, tanggal) {
-        //     console.log("Sending Trigger...");
-
-        //     $.ajax({
-        //         url: "http://10.10.5.62:8000/nds_wip/public/index.php/api/trigger-wip-line/dashboard-line/wip-line-sign",
-        //         type: "post",
-        //         data: {
-        //             line_id: line,
-        //             tanggal: tanggal,
-        //         },
-        //         dataType: "json",
-        //         success: function (response) {
-        //             console.log(response);
-
-        //             console.log("Trigger Sent!");
-        //         },
-        //         error: function (jqXHR) {
-        //             console.error(jqXHR);
-
-        //             console.error("Trigger Fail!");
-        //         }
-        //     });
-        // }
-
-        Livewire.on('triggerDashboard', (line, tanggal) => {
-            // triggerDashboard(line, tanggal);
-            console.log("trigger paused by interval");
         });
     </script>
 @endsection

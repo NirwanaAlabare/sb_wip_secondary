@@ -1,5 +1,5 @@
 <div>
-    <div class="loading-container-fullscreen" wire:loading wire:target="selectDefectAreaPosition, setAndSubmitInput, preSubmitInput, submitInput, updateOrder, submitRapidInput">
+    <div class="loading-container-fullscreen" wire:loading wire:target="selectDefectAreaPosition, setAndSubmitInput, preSubmitInput, submitInput, submitRapidInput">
         <div class="loading-container">
             <div class="loading"></div>
         </div>
@@ -27,14 +27,11 @@
         <div class="col-md-8">
             <div class="card h-100">
                 <div class="card-header d-flex justify-content-between align-items-center bg-reject text-light">
-                    <p class="mb-0 fs-5">Size</p>
                     <div class="d-flex justify-content-end align-items-center gap-1">
                         <div class="d-flex align-items-center gap-3 me-3">
                             <p class="mb-1 fs-5">REJECT</p>
-                            <p class="mb-1 fs-5">:</p>
-                            <p id="reject-qty" class="mb-1 fs-5">{{ $reject->sum('output') }}</p>
                         </div>
-                        <button class="btn btn-dark"  wire:click="$emit('preSubmitUndo', 'reject')" disabled>
+                        <button class="btn btn-dark" wire:click="$emit('preSubmitUndo', 'reject')" disabled>
                             <i class="fa-regular fa-rotate-left"></i>
                         </button>
                         {{-- <button class="btn btn-dark">
@@ -55,27 +52,27 @@
                     <div class="row h-100 row-gap-3" id="content-reject">
                         <div class="col-md-6">
                             <label class="form-label">Worksheet</label>
-                            <input type="text" class="form-control" id="worksheet-reject" readonly>
+                            <input type="text" class="form-control" id="worksheet-reject" wire:model="worksheetReject" readonly>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Style</label>
-                            <input type="text" class="form-control" id="style-reject" readonly>
+                            <input type="text" class="form-control" id="style-reject" wire:model="styleReject" readonly>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Color</label>
-                            <input type="text" class="form-control" id="color-reject" readonly>
+                            <input type="text" class="form-control" id="color-reject" wire:model="colorReject" readonly>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Size</label>
-                            <input type="text" class="form-control" id="size-reject" readonly>
+                            <input type="text" class="form-control" id="size-reject" wire:model="sizeReject" readonly>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Kode QR</label>
-                            <input type="text" class="form-control" id="kode-reject" readonly>
+                            <input type="text" class="form-control" id="kode-reject" wire:model="kodeReject" readonly>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Line</label>
-                            <input type="text" class="form-control" id="line-reject" readonly>
+                            <input type="text" class="form-control" id="line-reject" wire:model="lineReject" readonly>
                         </div>
                         <div class="col-md-6">
                             @error('rejectType')
@@ -90,7 +87,7 @@
                                 <label class="form-label me-1 mb-0">Reject Type</label>
                             </div>
                             <div wire:ignore id="select-reject-type-container">
-                                <select class="form-select @error('rejectType') is-invalid @enderror" id="reject-type-select2" wire:model='rejectType'>
+                                <select class="form-select @error('rejectType') is-invalid @enderror" id="reject-type-select2">
                                     <option value="" selected>Select reject type</option>
                                     @foreach ($defectTypes as $defect)
                                         <option value="{{ $defect->id }}">
@@ -114,7 +111,7 @@
                             </div>
                             <div class="d-flex gap-1">
                                 <div class="w-75" wire:ignore id="select-reject-area-container">
-                                    <select class="form-select @error('rejectArea') is-invalid @enderror" id="reject-area-select2" wire:model='rejectArea'>
+                                    <select class="form-select @error('rejectArea') is-invalid @enderror" id="reject-area-select2">
                                         <option value="" selected>Select defect area</option>
                                         @foreach ($defectAreas as $defect)
                                             <option value="{{ $defect->id }}">
@@ -157,16 +154,18 @@
                                 </div>
                             </div>
                         </div>
-                    </form>
-                </div>
-                <div class="d-flex justify-content-between">
-                    <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Batal</button>
-                    <div id="regular-submit-reject" wire:ignore.self>
-                        <button type="button" class="btn btn-success" wire:click="submitInput">Selesai</button>
+                        <div class="col-md-12">
+                            <div class="d-flex justify-content-end gap-3">
+                                <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Batal</button>
+                                <div id="regular-submit-reject" wire:ignore.self>
+                                    <button type="button" class="btn btn-success" wire:click="submitInput">Selesai</button>
+                                </div>
+                                {{-- <div id="rapid-submit-reject" wire:ignore.self>
+                                    <button type="button" class="btn btn-success" wire:click='submitRapidInput'>Selesai</button>
+                                </div> --}}
+                            </div>
+                        </div>
                     </div>
-                    {{-- <div id="rapid-submit-reject" wire:ignore.self>
-                        <button type="button" class="btn btn-success" wire:click='submitRapidInput'>Selesai</button>
-                    </div> --}}
                 </div>
             </div>
         </div>
@@ -212,7 +211,6 @@
                 theme: "bootstrap-5",
                 width: $( this ).data( 'width' ) ? $( this ).data( 'width' ) : $( this ).hasClass( 'w-100' ) ? '100%' : 'style',
                 placeholder: $( this ).data( 'placeholder' ),
-                dropdownParent: $('#reject-modal .modal-content #select-reject-type-container')
             });
 
             $('#reject-type-select2').on('change', function (e) {
@@ -225,7 +223,6 @@
                 theme: "bootstrap-5",
                 width: $( this ).data( 'width' ) ? $( this ).data( 'width' ) : $( this ).hasClass( 'w-100' ) ? '100%' : 'style',
                 placeholder: $( this ).data( 'placeholder' ),
-                dropdownParent: $('#reject-modal .modal-content #select-reject-area-container')
             });
 
             $('#reject-area-select2').on('change', function (e) {
@@ -317,7 +314,6 @@
 
         Livewire.on('toInputPanel', async (type) => {
             if (type == 'reject') {
-                @this.updateOutput();
                 scannedRejectItemInput.focus();
             }
         });

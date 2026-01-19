@@ -1,5 +1,5 @@
 <div wire:init="loadReworkPage">
-    <div class="loading-container-fullscreen" wire:loading wire:target='setAndSubmitInput, submitInput, submitMassRework, submitAllRework'>
+    <div class="loading-container-fullscreen" wire:loading wire:target='setAndSubmitInput, submitInput'>
         <div class="loading-container">
             <div class="loading"></div>
         </div>
@@ -23,23 +23,17 @@
                         </div>
                     @enderror
                     {{-- <div id="rework-reader" width="600px"></div> --}}
-                    <input type="text" class="qty-input" id="scannedReworkItem" name="scannedReworkItem">
+                    <input type="text" class="qty-input h-100" id="scannedReworkItem" name="scannedReworkItem">
                 </div>
             </div>
         </div>
         <div class="col-md-8">
             <div class="card h-100">
                 <div class="card-header d-flex justify-content-between align-items-center bg-rework text-light">
-                    <p class="mb-1 fs-5">Size</p>
                     <div class="d-flex flex-wrap justify-content-md-end align-items-center gap-1">
                         <div class="d-flex align-items-center gap-3 me-3">
                             <p class="mb-1 fs-5">REWORK</p>
-                            <p class="mb-1 fs-5">:</p>
-                            <p id="rework-qty" class="mb-1 fs-5">{{ $rework->sum('output') }}</p>
                         </div>
-                        <button class="btn btn-dark" wire:click="$emit('preSubmitUndo', 'rework')">
-                            <i class="fa-regular fa-rotate-left"></i>
-                        </button>
                     </div>
                 </div>
                 @error('sizeInput')
@@ -49,36 +43,33 @@
                     </div>
                 @enderror
                 <div class="card-body">
-                    <div class="loading-container" wire:loading wire:target='setSizeInput'>
-                        <div class="loading mx-auto"></div>
-                    </div>
                     <div class="loading-container hidden" id="loading-rework">
                         <div class="loading mx-auto"></div>
                     </div>
                     <div class="row h-100 row-gap-3" id="content-rework">
                         <div class="col-md-6">
                             <label class="form-label">Worksheet</label>
-                            <input type="text" class="form-control" id="worksheet-rework" readonly>
+                            <input type="text" class="form-control" id="worksheet-rework" wire:model="worksheetRework" readonly>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Style</label>
-                            <input type="text" class="form-control" id="style-rework" readonly>
+                            <input type="text" class="form-control" id="style-rework" wire:model="styleRework" readonly>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Color</label>
-                            <input type="text" class="form-control" id="color-rework" readonly>
+                            <input type="text" class="form-control" id="color-rework" wire:model="colorRework" readonly>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Size</label>
-                            <input type="text" class="form-control" id="size-rework" readonly>
+                            <input type="text" class="form-control" id="size-rework" wire:model="sizeRework" readonly>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Kode QR</label>
-                            <input type="text" class="form-control" id="kode-rework" readonly>
+                            <input type="text" class="form-control" id="kode-rework" wire:model="kodeRework" readonly>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Line</label>
-                            <input type="text" class="form-control" id="line-rework" readonly>
+                            <input type="text" class="form-control" id="line-rework" wire:model="lineRework" readonly>
                         </div>
                     </div>
                 </div>
@@ -103,6 +94,76 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Batal</button>
                     <button type="button" class="btn btn-sb-secondary" data-bs-dismiss="modal" wire:click='submitRapidInput'>Selesai</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Log --}}
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card mt-3" wire:ignore>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <input type="date" class="form-control" id="defect-rework-log-date" name="defect-rework-log-date">
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-bordered w-100" id="defect-rework-secondary-out-list-table">
+                            <thead>
+                                <tr>
+                                    <th>Kode Numbering</th>
+                                    <th>No. WS</th>
+                                    <th>Style</th>
+                                    <th>Color</th>
+                                    <th>Size</th>
+                                    <th>Line</th>
+                                    <th>Secondary</th>
+                                    <th>Total</th>
+                                    <th>Defect Type</th>
+                                    <th>Defect Area</th>
+                                    <th>Status</th>
+                                    <th>Image</th>
+                                    <th>Created By</th>
+                                    <th>Created At</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card mt-3" wire:ignore>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <input type="date" class="form-control" id="rework-log-date" name="rework-log-date">
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-bordered w-100" id="rework-secondary-out-list-table">
+                            <thead>
+                                <tr>
+                                    <th>Kode Numbering</th>
+                                    <th>No. WS</th>
+                                    <th>Style</th>
+                                    <th>Color</th>
+                                    <th>Size</th>
+                                    <th>Line</th>
+                                    <th>Secondary</th>
+                                    <th>Total</th>
+                                    <th>Defect Type</th>
+                                    <th>Defect Area</th>
+                                    <th>Status</th>
+                                    <th>Image</th>
+                                    <th>Created By</th>
+                                    <th>Created At</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
@@ -189,7 +250,6 @@
 
         Livewire.on('toInputPanel', async (type) => {
             if (type == 'rework') {
-                @this.updateOutput();
                 scannedReworkItemInput.focus();
             }
         });
@@ -197,5 +257,181 @@
         // Livewire.on('fromInputPanel', () => {
         //     clearReworkScan();
         // });
+
+        // DEFECT Secondary Out List
+        let defectReworkSecondaryOutListTable = $("#defect-rework-secondary-out-list-table").DataTable({
+            serverSide: true,
+            processing: true,
+            ordering: false,
+            searching: false,
+            paging: true,
+            lengthChange: false,
+            ajax: {
+                url: '{{ route('out-get-secondary-out-log') }}',
+                dataType: 'json',
+                data: function (d) {
+                    d.date = $("#defect-rework-log-date").val();
+                    d.status = "defect";
+                }
+            },
+            columns: [
+                {
+                    data: 'kode_numbering',
+                },
+                {
+                    data: 'ws',
+                },
+                {
+                    data: 'style',
+                },
+                {
+                    data: 'color',
+                },
+                {
+                    data: 'size',
+                },
+                {
+                    data: 'sewing_line',
+                },
+                {
+                    data: 'secondary',
+                },
+                {
+                    data: 'output',
+                },
+                {
+                    data: 'defect_type',
+                },
+                {
+                    data: 'defect_area',
+                },
+                {
+                    data: 'status',
+                },
+                {
+                    data: 'gambar',
+                },
+                {
+                    data: 'created_by_username',
+                },
+                {
+                    data: 'secondary_out_time',
+                },
+            ],
+            columnDefs: [
+                // {
+                //     targets: [0],
+                //     className: "text-nowrap text-center align-middle",
+                //     render: (data, type, row, meta) => {
+                //         return meta.row+1;
+                //     }
+                // },
+                {
+                    targets: "_all",
+                    className: "text-nowrap text-center align-middle"
+                },
+                {
+                    targets: [11],
+                    render: (data, type, row, meta) => {
+                        return `<button class="btn btn-dark" onclick="onShowDefectAreaImage('` + row.gambar + `', ` + row.defect_area_x + `, ` + row.defect_area_y + `)"><i class="fa fa-image"></i></button>`
+                    }
+                }
+            ],
+            rowCallback: function (row, data, iDisplayIndex) {
+                var info = this.api().page.info();
+                var page = info.page;
+                var length = info.length;
+                var index = (page * length + (iDisplayIndex + 1));
+                $('td:eq(0)', row).html(index); // Assuming the first column is for the index
+            }
+        });
+
+        // REWORK Secondary Out List
+        let reworkSecondaryOutListTable = $("#rework-secondary-out-list-table").DataTable({
+            serverSide: true,
+            processing: true,
+            ordering: false,
+            searching: false,
+            paging: true,
+            lengthChange: false,
+            ajax: {
+                url: '{{ route('out-get-secondary-out-log') }}',
+                dataType: 'json',
+                data: function (d) {
+                    d.date = $("#rework-log-date").val();
+                    d.status = "rework";
+                }
+            },
+            columns: [
+                {
+                    data: 'kode_numbering',
+                },
+                {
+                    data: 'ws',
+                },
+                {
+                    data: 'style',
+                },
+                {
+                    data: 'color',
+                },
+                {
+                    data: 'size',
+                },
+                {
+                    data: 'sewing_line',
+                },
+                {
+                    data: 'secondary',
+                },
+                {
+                    data: 'output',
+                },
+                {
+                    data: 'defect_type',
+                },
+                {
+                    data: 'defect_area',
+                },
+                {
+                    data: 'status',
+                },
+                {
+                    data: 'gambar',
+                },
+                {
+                    data: 'created_by_username',
+                },
+                {
+                    data: 'secondary_out_time',
+                },
+            ],
+            columnDefs: [
+                // {
+                //     targets: [0],
+                //     className: "text-nowrap text-center align-middle",
+                //     render: (data, type, row, meta) => {
+                //         return meta.row+1;
+                //     }
+                // },
+                {
+                    targets: "_all",
+                    className: "text-nowrap text-center align-middle"
+                },
+                {
+                    targets: [11],
+                    render: (data, type, row, meta) => {
+                        return `<button class="btn btn-dark" onclick="onShowDefectAreaImage('` + row.gambar + `', ` + row.defect_area_x + `, ` + row.defect_area_y + `)"><i class="fa fa-image"></i></button>`
+                    }
+                }
+            ],
+            rowCallback: function (row, data, iDisplayIndex) {
+                var info = this.api().page.info();
+                var page = info.page;
+                var length = info.length;
+                var index = (page * length + (iDisplayIndex + 1));
+                $('td:eq(0)', row).html(index); // Assuming the first column is for the index
+            }
+        });
     </script>
 @endpush

@@ -69,11 +69,10 @@
 @push('scripts')
     <script>
         // Set Date Event
-        let tanggal = document.getElementById("tanggal");
-        if (tanggal) {
-            let tanggalValue = tanggal.value;
+        if (document.getElementById("tanggal")) {
+            let tanggalValue = document.getElementById("tanggal").value;
             let isChanged = function() {
-                if(tanggal.value !== tanggalValue){
+                if(document.getElementById("tanggal").value !== tanggalValue){
                     tanggalValue=tanggal.value;
                     return true;
                 };
@@ -81,7 +80,7 @@
                 return false;
             };
 
-            tanggal.addEventListener("change", function() {
+            document.getElementById("tanggal").addEventListener("change", function() {
                 if(isChanged()) {
                     Livewire.emit('setDate', tanggalValue);
                 }

@@ -357,8 +357,8 @@
             $('#selectedSecondary').trigger('change');
         });
 
-        // Defect In List
-        let defectInListTable = $("#secondary-in-list-table").DataTable({
+        // Secondary In List
+        let secondaryInListTable = $("#secondary-in-list-table").DataTable({
             serverSide: true,
             processing: true,
             ordering: false,

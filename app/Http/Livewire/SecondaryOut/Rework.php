@@ -29,21 +29,6 @@ class Rework extends Component
     public $defectPositionX;
     public $defectPositionY;
 
-    // defect list
-    public $allDefectListFilter;
-    public $allDefectImage;
-    public $allDefectPosition;
-    // public $allDefectList;
-
-    // mass rework
-    public $massQty;
-    public $massSize;
-    public $massDefectType;
-    public $massDefectTypeName;
-    public $massDefectArea;
-    public $massDefectAreaName;
-    public $massSelectedDefect;
-
     public $info;
 
     public $output;
@@ -69,17 +54,12 @@ class Rework extends Component
     ];
 
     protected $listeners = [
-        'submitRework' => 'submitRework',
-        'submitAllRework' => 'submitAllRework',
-        'cancelRework' => 'cancelRework',
         'hideDefectAreaImageClear' => 'hideDefectAreaImage',
-        'updateWsDetailSizes' => 'updateWsDetailSizes',
-        'updateOutputRework' => 'updateOutput',
         'setAndSubmitInputRework' => 'setAndSubmitInput',
         'toInputPanel' => 'resetError'
     ];
 
-    private function checkIfNumberingExists(): bool
+    private function checkIfNumberingExists($numberingInput = null): bool
     {
         $currentData = DB::table('output_secondary_out')->where('kode_numbering', ($numberingInput ?? $this->numberingInput))->first();
         if ($currentData) {
@@ -114,36 +94,13 @@ class Rework extends Component
         }
     }
 
-    public function updateOutput()
-    {
-        $this->output = DB::
-            connection('mysql_sb')->
-            table('output_secondary_out')->
-            where('status', 'rework')->
-            count();
-
-        $this->rework = DB::
-            connection('mysql_sb')->
-            table('output_secondary_out')->
-            selectRaw('output_rfts.*, so_det.size')->
-            leftJoin('output_secondary_in', 'output_secondary_in.id', '=', 'output_secondary_out.secondary_in_id')->
-            leftJoin('output_rfts', 'output_rfts.id', '=', 'output_secondary_in.rft_id')->
-            leftJoin('so_det', 'so_det.id', '=', 'output_rfts.so_det_id')->
-            where('status', 'rework')->
-            whereRaw("DATE(updated_at) = '".date('Y-m-d')."'")->
-            get();
-    }
-
     public function loadReworkPage()
     {
         $this->emit('loadReworkPageJs');
     }
 
-    public function mount(SessionManager $session, $orderWsDetailSizes)
+    public function mount(SessionManager $session)
     {
-        $this->orderWsDetailSizes = $orderWsDetailSizes;
-        $session->put('orderWsDetailSizes', $orderWsDetailSizes);
-
         $this->massSize = '';
 
         $this->info = true;
@@ -215,7 +172,7 @@ class Rework extends Component
             //     }
             // }
 
-            // One Straight Format
+            // One Straight Source
             $numberingData = DB::connection("mysql_nds")->table("year_sequence")->selectRaw("year_sequence.*, year_sequence.id_year_sequence no_cut_size")->where("id_year_sequence", $numberingInput)->first();
 
             if ($numberingData) {
@@ -236,12 +193,13 @@ class Rework extends Component
             return;
         }
 
+        // Get Secondary Out Defect Detail
         $scannedDefectData = SecondaryOutDefect::where("output_secondary_out.kode_numbering", $numberingInput)->first();
 
         if ($scannedDefectData) {
             $now = Carbon::now();
 
-            // update defect detail
+            // Update Secondary Out Defect Detail
             $updateDefect = SecondaryOutDefect::where("id", $scannedDefectData->id)->update([
                 "status" => "reworked",
                 "reworked_by" => Auth::user()->line_id,
@@ -249,14 +207,12 @@ class Rework extends Component
                 "reworked_at" => $now
             ]);
 
-            // update defect
+            // Update Secondary Out Defect
             $updateSecondaryOut = SecondaryOut::where("id", $scannedDefectData->secondary_out_id)->update([
-                "status" => "reworked",
-                "reworked_by" => Auth::user()->line_id,
-                "reworked_by_username" => Auth::user()->username,
-                "reworked_at" => $now
+                "status" => "rework",
             ]);
 
+            // Get Secondary Out
             $secondaryInData = $scannedDefectData->secondaryOut->secondaryIn;
 
             $this->sizeInput = '';
@@ -267,12 +223,12 @@ class Rework extends Component
             if ($updateDefect && $updateSecondaryOut) {
                 $scannedDetail = $secondaryInData->rft;
                 if ($scannedDetail) {
-                    $this->worksheetReject = $scannedDetail->so_det->so->actCosting->kpno;
-                    $this->styleReject = $scannedDetail->so_det->so->actCosting->styleno;
-                    $this->colorReject = $scannedDetail->so_det->color;
-                    $this->sizeReject = $scannedDetail->so_det->size;
-                    $this->kodeReject = $scannedDetail->kode_numbering;
-                    $this->lineReject = $scannedDetail->userLine->username;
+                    $this->worksheetRework = $scannedDetail->so_det->so->actCosting->kpno;
+                    $this->styleRework = $scannedDetail->so_det->so->actCosting->styleno;
+                    $this->colorRework = $scannedDetail->so_det->color;
+                    $this->sizeRework = $scannedDetail->so_det->size;
+                    $this->kodeRework = $scannedDetail->kode_numbering;
+                    $this->lineRework = $scannedDetail->userLine->username;
                 }
 
                 $this->emit('alert', 'success', "DEFECT dengan ID : ".$scannedDefectData->kode_numbering." berhasil di REWORK.");
@@ -324,54 +280,37 @@ class Rework extends Component
 
         if ($this->rapidRework && count($this->rapidRework) > 0) {
             for ($i = 0; $i < count($this->rapidRework); $i++) {
+                // Get Secondary Out Defect Detail
                 $scannedDefectData = DB::connection('mysql_sb')->
-                    table('output_defects')->
-                    selectRaw('output_defects.*, output_defects.master_plan_id, master_plan.sewing_line, output_defect_in_out.status in_out_status')->
-                    leftJoin("output_defect_in_out", function ($join) {
-                        $join->on("output_defect_in_out.defect_id", "=", "output_defects.id");
-                        $join->on("output_defect_in_out.output_type", "=", DB::raw("'qc'"));
-                    })->
-                    leftJoin("master_plan", "master_plan.id", "=", "output_defects.master_plan_id")->
-                    where("output_defects.defect_status", "defect")->
-                    where("output_defects.kode_numbering", $this->rapidRework[$i]['numberingInput'])->
+                    table('output_secondary_out_defect')->
+                    selectRaw('output_secondary_out_defect.*')->
+                    leftJoin("output_secondary_out", "output_secondary_out.id", "=", "output_secondary_out_defect.secondary_out_id")->
+                    where("output_secondary_out_defect.status", "defect")->
+                    where("output_secondary_out.kode_numbering", $this->rapidRework[$i]['numberingInput'])->
                     first();
 
-                if (($scannedDefectData) && ($this->orderWsDetailSizes->where('so_det_id', $scannedDefectData->so_det_id)->count() > 0)) {
-                    if ($scannedDefectData->master_plan_id == $this->orderInfo->id) {
-                        if ($scannedDefectData->in_out_status != "defect") {
-                            $createRework = ReworkModel::create([
-                                'defect_id' => $scannedDefectData->id,
-                                'status' => 'NORMAL',
-                                "created_by" => Auth::user()->id
-                            ]);
+                if ($scannedDefectData) {
+                    $now = Carbon::now();
 
-                            array_push($defectIds, $scannedDefectData->id);
+                    // Update Secondary Out Defect Detail
+                    $updateDefect = SecondaryOutDefect::where("id", $scannedDefectData->id)->update([
+                        'status' => 'reworked',
+                        "reworked_by" => Auth::user()->id,
+                        "reworked_by_username" => Auth::user()->username,
+                        "reworked_at" => $now
+                    ]);
 
-                            array_push($rftData, [
-                                'master_plan_id' => $this->orderInfo->id,
-                                'so_det_id' => $scannedDefectData->so_det_id,
-                                'no_cut_size' => $scannedDefectData->no_cut_size,
-                                'kode_numbering' => $scannedDefectData->kode_numbering,
-                                'rework_id' => $createRework->id,
-                                'status' => 'REWORK',
-                                'created_at' => Carbon::now(),
-                                'updated_at' => Carbon::now(),
-                                "created_by" => Auth::user()->id
-                            ]);
+                    // Update Secondary Out Defect
+                    $updateSecondaryOut = SecondaryOut::where("id", $scannedDefectData->secondary_out_id)->update([
+                        'status' => 'rework',
+                    ]);
 
-                            $success += 1;
-                        }
-                    } else {
-                        $fail += 1;
-                    }
+                    $success += 1;
                 } else {
                     $fail += 1;
                 }
             }
         }
-
-        $rapidDefectUpdate = Defect::whereIn('id', $defectIds)->update(["defect_status" => "reworked"]);
-        $rapidRftInsert = Rft::insert($rftData);
 
         if ($success > 0) {
             $this->emit('alert', 'success', $success." output berhasil terekam. ");
@@ -404,85 +343,6 @@ class Rework extends Component
 
         $this->emit('loadReworkPageJs');
 
-        $this->allDefectImage = MasterPlan::select('gambar')->find($this->orderInfo->id);
-
-        $this->allDefectPosition = DB::connection('mysql_sb')->table('output_defects')->where('output_defects.defect_status', 'defect')->
-            where('output_defects.master_plan_id', $this->orderInfo->id)->
-            get();
-
-        $allDefectList = DB::connection('mysql_sb')->table('output_defects')->selectRaw('output_defects.defect_type_id, output_defects.defect_area_id, output_defect_types.defect_type, output_defect_areas.defect_area, count(*) as total')->
-            leftJoin('output_defect_areas', 'output_defect_areas.id', '=', 'output_defects.defect_area_id')->
-            leftJoin('output_defect_types', 'output_defect_types.id', '=', 'output_defects.defect_type_id')->
-            where('output_defects.defect_status', 'defect')->
-            where('output_defects.master_plan_id', $this->orderInfo->id)->
-            whereRaw("
-                (
-                    output_defect_types.defect_type LIKE '%".$this->allDefectListFilter."%' OR
-                    output_defect_areas.defect_area LIKE '%".$this->allDefectListFilter."%'
-                )
-            ")->
-            groupBy('output_defects.defect_type_id', 'output_defects.defect_area_id', 'output_defect_types.defect_type', 'output_defect_areas.defect_area')->
-            orderBy('output_defects.updated_at', 'desc')->
-            paginate(5, ['*'], 'allDefectListPage');
-
-        $defects = Defect::selectRaw('output_defects.*, so_det.size as so_det_size, output_defect_types.defect_type, output_defect_areas.defect_area')->
-            leftJoin('so_det', 'so_det.id', '=', 'output_defects.so_det_id')->
-            leftJoin('output_defect_areas', 'output_defect_areas.id', '=', 'output_defects.defect_area_id')->
-            leftJoin('output_defect_types', 'output_defect_types.id', '=', 'output_defects.defect_type_id')->
-            where('output_defects.defect_status', 'defect')->
-            where('output_defects.master_plan_id', $this->orderInfo->id)->
-            whereRaw("(
-                output_defects.id LIKE '%".$this->searchDefect."%' OR
-                so_det.size LIKE '%".$this->searchDefect."%' OR
-                output_defect_areas.defect_area LIKE '%".$this->searchDefect."%' OR
-                output_defect_types.defect_type LIKE '%".$this->searchDefect."%' OR
-                output_defects.defect_status LIKE '%".$this->searchDefect."%'
-            )")->
-            orderBy('output_defects.updated_at', 'desc')->paginate(10, ['*'], 'defectsPage');
-
-        $reworks = ReworkModel::selectRaw('output_reworks.*, so_det.size as so_det_size, output_defect_types.defect_type, output_defect_areas.defect_area')->
-            leftJoin('output_defects', 'output_defects.id', '=', 'output_reworks.defect_id')->
-            leftJoin('output_defect_areas', 'output_defect_areas.id', '=', 'output_defects.defect_area_id')->
-            leftJoin('output_defect_types', 'output_defect_types.id', '=', 'output_defects.defect_type_id')->
-            leftJoin('so_det', 'so_det.id', '=', 'output_defects.so_det_id')->
-            where('output_defects.defect_status', 'reworked')->
-            where('output_defects.master_plan_id', $this->orderInfo->id)->
-            whereRaw("(
-                output_reworks.id LIKE '%".$this->searchRework."%' OR
-                output_defects.id LIKE '%".$this->searchRework."%' OR
-                so_det.size LIKE '%".$this->searchRework."%' OR
-                output_defect_areas.defect_area LIKE '%".$this->searchRework."%' OR
-                output_defect_types.defect_type LIKE '%".$this->searchRework."%' OR
-                output_defects.defect_status LIKE '%".$this->searchRework."%'
-            )")->
-            orderBy('output_reworks.updated_at', 'desc')->paginate(10, ['*'], 'reworksPage');
-
-        $this->massSelectedDefect = DB::connection('mysql_sb')->table('output_defects')->selectRaw('output_defects.so_det_id, so_det.size as size, count(*) as total')->
-            leftJoin('so_det', 'so_det.id', '=', 'output_defects.so_det_id')->
-            where('output_defects.defect_status', 'defect')->
-            where('output_defects.master_plan_id', $this->orderInfo->id)->
-            where('output_defects.defect_type_id', $this->massDefectType)->
-            where('output_defects.defect_area_id', $this->massDefectArea)->
-            groupBy('output_defects.so_det_id', 'so_det.size')->
-            get();
-
-        $this->output = DB::
-            connection('mysql_sb')->
-            table('output_defects')->
-            where('master_plan_id', $this->orderInfo->id)->
-            where('defect_status', 'reworked')->
-            count();
-
-        $this->rework = DB::
-            connection('mysql_sb')->
-            table('output_defects')->
-            selectRaw('output_defects.*, so_det.size')->
-            leftJoin('so_det', 'so_det.id', '=', 'output_defects.so_det_id')->
-            where('master_plan_id', $this->orderInfo->id)->
-            where('defect_status', 'reworked')->
-            whereRaw("DATE(updated_at) = '".date('Y-m-d')."'")->
-            get();
-
-        return view('livewire.rework' , ['defects' => $defects, 'reworks' => $reworks, 'allDefectList' => $allDefectList]);
+        return view('livewire.secondary-out.rework');
     }
 }

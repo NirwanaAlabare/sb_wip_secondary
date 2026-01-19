@@ -470,77 +470,65 @@ class SecondaryOutController extends Controller
         return Datatables::of($secondaryInList)->toJson();
     }
 
-    public function submitSecondaryIn(Request $request)
+    public function getSecondaryOutLog(Request $request)
     {
-        $validatedRequest = $request->validate([
-            'scannedSecondaryIn' => 'required',
-            'selectedSecondary' => 'required',
-        ]);
+        // Date filter
+        $date = $request->date ? $request->date : date("Y-m-d");
 
-        $status = "";
-        $message = "";
+        // Status filter
+        $status = $request->status;
 
-        if ($request->scannedSecondaryIn) {
-            $scannedOutput = Rft::selectRaw("
-                    output_rfts.id,
-                    output_rfts.kode_numbering,
-                    output_rfts.so_det_id,
-                    output_secondary_master.secondary,
-                    act_costing.kpno ws,
-                    act_costing.styleno style,
-                    so_det.color,
-                    so_det.size,
-                    userpassword.username sewing_line,
-                    output_secondary_in.id secondary_in_id
-                ")->
-                leftJoin("user_sb_wip", "user_sb_wip.id", "=", "output_rfts.created_by")->
-                leftJoin("userpassword", "userpassword.line_id", "=", "user_sb_wip.line_id")->
-                leftJoin("so_det", "so_det.id", "=", "output_rfts.so_det_id")->
-                leftJoin("master_plan", "master_plan.id", "=", "output_rfts.master_plan_id")->
-                leftJoin("act_costing", "act_costing.id", "=", "master_plan.id_ws")->
-                leftJoin("output_secondary_in", "output_secondary_in.rft_id", "=", "output_rfts.id")->
-                leftJoin("output_secondary_master", "output_secondary_master.id", "=", "output_secondary_in.secondary_id")->
-                whereNotNull("output_rfts.id")->
-                where("output_rfts.kode_numbering", $validatedRequest['scannedSecondaryIn'])->
-                first();
+        $log = collect(DB::select("
+            select
+                output_secondary_out.*,
+                act_costing.kpno ws,
+                act_costing.styleno style,
+                so_det.color,
+                so_det.size,
+                userpassword.username as sewing_line,
+                output_secondary_master.secondary,
+                defect_types.defect_type,
+                defect_areas.defect_area,
+                output_secondary_out_defect.defect_area_x,
+                output_secondary_out_defect.defect_area_y,
+                reject_types.defect_type as reject_type,
+                reject_areas.defect_area as reject_area,
+                output_secondary_out_reject.defect_area_x as reject_area_x,
+                output_secondary_out_reject.defect_area_y as reject_area_y,
+                COUNT(output_secondary_out.id) output,
+                output_secondary_out.created_by_username,
+                COALESCE(output_secondary_out.updated_at, output_secondary_out.created_at) as secondary_out_time,
+                master_plan.gambar
+            from
+                `output_secondary_out`
+                left join `output_secondary_out_defect` on `output_secondary_out_defect`.`secondary_out_id` = `output_secondary_out`.`id`
+                left join `output_secondary_out_reject` on `output_secondary_out_reject`.`secondary_out_id` = `output_secondary_out`.`id`
+                left join `output_defect_types` defect_types on `defect_types`.`id` = `output_secondary_out_defect`.`defect_type_id`
+                left join `output_defect_areas` defect_areas on `defect_areas`.`id` = `output_secondary_out_defect`.`defect_area_id`
+                left join `output_defect_types` reject_types on `reject_types`.`id` = `output_secondary_out_reject`.`defect_type_id`
+                left join `output_defect_areas` reject_areas on `reject_areas`.`id` = `output_secondary_out_reject`.`defect_area_id`
+                left join `output_secondary_in` on `output_secondary_in`.`id` = `output_secondary_out`.`secondary_in_id`
+                left join `output_secondary_master` on `output_secondary_master`.`id` = `output_secondary_in`.`secondary_id`
+                left join `output_rfts` on `output_rfts`.`id` = `output_secondary_in`.`rft_id`
+                left join `user_sb_wip` on `user_sb_wip`.`id` = `output_rfts`.`id`
+                left join `userpassword` on `userpassword`.`line_id` = `user_sb_wip`.`line_id`
+                left join `so_det` on `so_det`.`id` = `output_rfts`.`so_det_id`
+                left join `so` on `so`.`id` = `so_det`.`id`
+                left join `act_costing` on `act_costing`.`id` = `so`.`id_cost`
+                left join `master_plan` on `master_plan`.`id` = `output_rfts`.`master_plan_id`
+            where
+                COALESCE(output_secondary_out.updated_at, output_secondary_out.created_at) between '".$date." 00:00:00' and '".$date." 23:59:59'
+                ".($status ? " and output_secondary_out.status = '".$status."' " : "")."
+            group by
+                act_costing.kpno,
+                act_costing.styleno,
+                so_det.color,
+                so_det.size,
+                output_secondary_out.created_at,
+                output_secondary_out.kode_numbering
+        "));
 
-            if ($scannedOutput) {
-                $secondaryIn = SewingSecondaryIn::where("rft_id", $scannedOutput->id)->first();
-
-                if (!$secondaryIn) {
-                    $createsecondaryIn = SewingSecondaryIn::create([
-                        "kode_numbering" => $scannedOutput->kode_numbering,
-                        "rft_id" => $scannedOutput->id,
-                        "secondary_id" => $validatedRequest['selectedSecondary'],
-                        "created_by" => Auth::user()->line_id,
-                        "created_by_username" => Auth::user()->username,
-                    ]);
-
-                    if ($createsecondaryIn) {
-                        $status = "success";
-                        $message = "OUTPUT dengan KODE '".$validatedRequest['scannedSecondaryIn']."' berhasil masuk ke 'SECONDARY IN'";
-                    } else {
-                        $status = "error";
-                        $message = "Terjadi Kesalahan.";
-                    }
-                } else {
-                    $status = "warning";
-                    $message = "QR sudah discan di ".strtoupper($scannedOutput->secondary);
-                }
-            } else {
-                $status = "error";
-                $message = "OUTPUT dengan QR '".$validatedRequest['scannedSecondaryIn']."' tidak ditemukan";
-            }
-        } else {
-            $status = "error";
-            $message = "QR tidak sesuai";
-        }
-
-        return array(
-            "status" => $status,
-            "message" => $message,
-            "data" => $scannedOutput
-        );
+        return Datatables::of($log)->toJson();
     }
 
     public function exportSecondaryInOut(Request $request) {
