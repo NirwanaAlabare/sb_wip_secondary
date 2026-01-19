@@ -1,12 +1,5 @@
 @extends('layouts.index')
 
-@section('custom-link')
-    <!-- DataTables -->
-    <link rel="stylesheet" href="{{ asset('datatables/datatables-bs4/css/dataTables.bootstrap4.min.css') }}">
-    <link rel="stylesheet" href="{{ asset('datatables/datatables-responsive/css/responsive.bootstrap4.min.css') }}">
-    <link rel="stylesheet" href="{{ asset('datatables/datatables-buttons/css/buttons.bootstrap4.min.css') }}">
-@endsection
-
 @section('content')
     {{-- Production Panel Livewire --}}
     @livewire('secondary-out.production-panel')
@@ -95,12 +88,6 @@
 @endsection
 
 @section('custom-script')
-    <!-- DataTables  & Plugins -->
-    <script src="{{ asset('datatables/datatables/jquery.dataTables.min.js') }}"></script>
-    <script src="{{ asset('datatables/datatables-bs4/js/dataTables.bootstrap4.min.js') }}"></script>
-    <script src="{{ asset('datatables/datatables-responsive/js/dataTables.responsive.min.js') }}"></script>
-    <script src="{{ asset('datatables/datatables-responsive/js/responsive.bootstrap4.min.js') }}"></script>
-    <script src="{{ asset('datatables/datatables-rowsgroup/dataTables.rowsGroup.js') }}"></script>
 
     <script>
         document.addEventListener("DOMContentLoaded", () => {
