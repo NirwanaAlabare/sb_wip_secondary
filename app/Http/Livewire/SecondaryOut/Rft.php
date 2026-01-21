@@ -32,6 +32,7 @@ class Rft extends Component
     public $lineRft;
 
     public $selectedSecondary;
+    public $selectedSecondaryText;
 
     protected $rules = [
         'sizeInput' => 'required',
@@ -70,7 +71,13 @@ class Rft extends Component
         $this->kodeRft = null;
         $this->lineRft = null;
 
-        $this->selectedSecondary = null;
+        $this->selectedSecondary = $selectedSecondary;
+
+        $selectedSecondaryData = DB::table("output_secondary_master")->where("id", $this->selectedSecondary)->first();
+
+        if ($selectedSecondaryData) {
+            $this->selectedSecondaryText = $selectedSecondaryData->secondary;
+        }
     }
 
     public function dehydrate()
@@ -183,7 +190,7 @@ class Rft extends Component
                             $this->emit('alert', 'error', "Terjadi kesalahan. Output tidak berhasil direkam.");
                         }
                     } else {
-                        $this->emit('alert', 'error', "Secondary IN tidak ditemukan di ".$selectedSecondary);
+                        $this->emit('alert', 'error', "Secondary IN tidak ditemukan di ".$this->selectedSecondaryText);
                     }
 
                 } else {
@@ -289,6 +296,12 @@ class Rft extends Component
 
     public function updateSelectedSecondary($selectedSecondary) {
         $this->selectedSecondary = $selectedSecondary;
+
+        $selectedSecondaryData = DB::table("output_secondary_master")->where("id", $this->selectedSecondary)->first();
+
+        if ($selectedSecondaryData) {
+            $this->selectedSecondaryText = $selectedSecondaryData->secondary;
+        }
     }
 
     public function render(SessionManager $session)

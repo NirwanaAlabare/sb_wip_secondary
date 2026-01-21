@@ -46,6 +46,8 @@ class Rework extends Component
 
     public $selectedSecondary;
 
+    public $selectedSecondaryText;
+
     protected $rules = [
         'sizeInput' => 'required',
         'noCutInput' => 'required',
@@ -121,6 +123,12 @@ class Rework extends Component
         $this->rapidReworkCount = 0;
 
         $this->selectedSecondary = $selectedSecondary;
+
+        $selectedSecondaryData = DB::table("output_secondary_master")->where("id", $this->selectedSecondary)->first();
+
+        if ($selectedSecondaryData) {
+            $this->selectedSecondaryText = $selectedSecondaryData->secondary;
+        }
     }
 
     public function closeInfo()
@@ -228,7 +236,7 @@ class Rework extends Component
                     ]);
 
                 } else {
-                    $this->emit('alert', 'error', "Secondary IN tidak ditemukan di ".$this->selectedSecondary);
+                    $this->emit('alert', 'error', "Secondary IN tidak ditemukan di ".$this->selectedSecondaryText);
                 }
 
             }
@@ -255,6 +263,8 @@ class Rework extends Component
             } else {
                 $this->emit('alert', 'error', "Terjadi kesalahan. DEFECT dengan ID : ".$scannedDefectData->kode_numbering." tidak berhasil di REWORK.");
             }
+        } else {
+            $this->emit('alert', 'error', "Terjadi kesalahan. DEFECT dengan ID : ".$numberingInput." tidak ditemukan di ".$this->selectedSecondaryText);
         }
     }
 
@@ -346,6 +356,12 @@ class Rework extends Component
 
     public function updateSelectedSecondary($selectedSecondary) {
         $this->selectedSecondary = $selectedSecondary;
+
+        $selectedSecondaryData = DB::table("output_secondary_master")->where("id", $this->selectedSecondary)->first();
+
+        if ($selectedSecondaryData) {
+            $this->selectedSecondaryText = $selectedSecondaryData->secondary;
+        }
     }
 
     public function render(SessionManager $session)

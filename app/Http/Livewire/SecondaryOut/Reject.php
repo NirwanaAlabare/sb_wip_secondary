@@ -52,6 +52,7 @@ class Reject extends Component
     public $rejectAreaPositionY;
 
     public $selectedSecondary;
+    public $selectedSecondaryText;
 
     protected $rules = [
         'sizeInput' => 'required',
@@ -119,6 +120,12 @@ class Reject extends Component
         $this->lineReject = null;
 
         $this->selectedSecondary = $selectedSecondary;
+
+        $selectedSecondaryData = DB::table("output_secondary_master")->where("id", $this->selectedSecondary)->first();
+
+        if ($selectedSecondaryData) {
+            $this->selectedSecondaryText = $selectedSecondaryData->secondary;
+        }
     }
 
     public function dehydrate()
@@ -274,7 +281,7 @@ class Reject extends Component
                             $this->lineReject = $scannedDetail->userSbWip->userPassword->username;
                         }
                     } else {
-                        $this->emit('alert', 'error', "Secondary IN tidak ditemukan di ".$this->selectedSecondary);
+                        $this->emit('alert', 'error', "Secondary IN tidak ditemukan di ".$this->selectedSecondaryText);
                     }
                 }
             }
@@ -585,6 +592,12 @@ class Reject extends Component
 
     public function updateSelectedSecondary($selectedSecondary) {
         $this->selectedSecondary = $selectedSecondary;
+
+        $selectedSecondaryData = DB::table("output_secondary_master")->where("id", $this->selectedSecondary)->first();
+
+        if ($selectedSecondaryData) {
+            $this->selectedSecondaryText = $selectedSecondaryData->secondary;
+        }
     }
 
     public function render(SessionManager $session)

@@ -58,6 +58,7 @@ class Defect extends Component
     public $rapidDefectCount;
 
     public $selectedSecondary;
+    public $selectedSecondaryText;
 
     protected $rules = [
         'sizeInput' => 'required',
@@ -125,7 +126,13 @@ class Defect extends Component
         $this->rapidDefect = [];
         $this->rapidDefectCount = 0;
 
-        $this->selectedSecondary = 0;
+        $this->selectedSecondary = $selectedSecondary;
+
+        $selectedSecondaryData = DB::table("output_secondary_master")->where("id", $this->selectedSecondary)->first();
+
+        if ($selectedSecondaryData) {
+            $this->selectedSecondaryText = $selectedSecondaryData->secondary;
+        }
     }
 
     public function dehydrate()
@@ -328,7 +335,7 @@ class Defect extends Component
                             $this->emit('alert', 'error', "Terjadi kesalahan. QR tidak sesuai.");
                         }
                     } else {
-                        $this->emit('alert', 'error', "Secondary IN tidak ditemukan di ".$this->selectedSecondary);
+                        $this->emit('alert', 'error', "Secondary IN tidak ditemukan di ".$this->selectedSecondaryText);
                     }
 
                 }
@@ -579,6 +586,12 @@ class Defect extends Component
 
     public function updateSelectedSecondary($selectedSecondary) {
         $this->selectedSecondary = $selectedSecondary;
+
+        $selectedSecondaryData = DB::table("output_secondary_master")->where("id", $this->selectedSecondary)->first();
+
+        if ($selectedSecondaryData) {
+            $this->selectedSecondaryText = $selectedSecondaryData->secondary;
+        }
     }
 
     public function render(SessionManager $session)
