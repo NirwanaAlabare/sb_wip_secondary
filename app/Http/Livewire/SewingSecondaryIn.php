@@ -163,6 +163,21 @@ class SewingSecondaryIn extends Component
 
         $this->lines = UserPassword::where("Groupp", "SEWING")->orderBy("line_id", "asc")->get();
 
+        $this->orders = DB::connection('mysql_sb')->
+            table('act_costing')->
+            selectRaw('
+                id as id_ws,
+                kpno as no_ws,
+                styleno as style
+            ')->
+            where('status', '!=', 'CANCEL')->
+            where('cost_date', '>=', '2023-01-01')->
+            where('type_ws', 'STD')->
+            orderBy('cost_date', 'desc')->
+            orderBy('kpno', 'asc')->
+            groupBy('kpno')->
+            get();
+
         $this->secondaryMaster = SewingSecondaryMaster::get();
 
         // All Defect

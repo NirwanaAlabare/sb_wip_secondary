@@ -41,6 +41,7 @@ Route::middleware('auth')->group(function () {
 
     Route::controller(GeneralController::class)->prefix('general')->group(function () {
         Route::get('/get-master-plan', 'getMasterPlan')->name("get-master-plan");
+        Route::get('/get-color', 'getColor')->name("get-color");
         Route::get('/get-size', 'getSize')->name("get-size");
         Route::get('/get-secondary-master', 'getSecondaryMaster')->name("get-get-secondary-master");
     });

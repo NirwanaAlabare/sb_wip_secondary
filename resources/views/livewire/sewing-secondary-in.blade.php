@@ -40,34 +40,57 @@
                 </div>
                 <div class="card-body">
                     <div class="row">
-                        <div class="col-md-4" wire:ignore>
-                            <input type="text" class="qty-input border h-100" id="scannedSecondaryIn" name="scannedSecondaryIn">
-                        </div>
-                        <div class="col-md-8">
-                            <div class="row g-3">
-                                <div class="col-md-4">
-                                    <label class="form-label fw-bold">Kode QR</label>
-                                    <input type="text" class="form-control" id="kodeNumbering" name="kodeNumbering" readonly>
+                        <div class="col-md-12">
+                            <div class="d-flex justify-content-end">
+                                <div>
+                                    <label class="form-label fw-bold w-auto">Total Qty IN</label>
+                                    <input type="number" class="form-control" readonly>
                                 </div>
+                            </div>
+                        </div>
+                        <div class="col-md-12">
+                            <div class="row g-3" wire:ignore>
                                 <div class="col-md-4">
                                     <label class="form-label fw-bold">Line</label>
-                                    <input type="text" class="form-control" id="sewingLine" name="sewingLine" readonly>
+                                    <select class="form-control select2" id="sewingLine" name="sewingLine">
+                                        <option value="">Pilih Line</option>
+                                        @foreach ($lines as $line)
+                                            <option value="{{ $line->username }}">{{ $line->username }}</option>
+                                        @endforeach
+                                    </select>
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label fw-bold">Worksheet</label>
-                                    <input type="text" class="form-control" id="worksheet" name="worksheet" readonly>
+                                    <select class="form-control select2" id="worksheet" name="worksheet">
+                                        <option value="">Pilih Worksheet</option>
+                                        @foreach ($orders as $order)
+                                            <option value="{{ $order->id_ws }}" data-style="{{ $order->style }}">{{ $order->no_ws }}</option>
+                                        @endforeach
+                                    </select>
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label fw-bold">Style</label>
                                     <input type="text" class="form-control" id="style" name="style" readonly>
                                 </div>
-                                <div class="col-md-4">
+                                <div class="col-md-3">
                                     <label class="form-label fw-bold">Color</label>
-                                    <input type="text" class="form-control" id="color" name="color" readonly>
+                                    <select class="form-control select2" id="color" name="color">
+                                        <option value=""></option>
+                                    </select>
                                 </div>
-                                <div class="col-md-4">
+                                <div class="col-md-3">
                                     <label class="form-label fw-bold">Size</label>
-                                    <input type="text" class="form-control" id="size" name="size" readonly>
+                                    <select class="form-control select2" id="size" name="size">
+                                        <option value=""></option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label fw-bold">Sewing Qty</label>
+                                    <input type="number" class="form-control" id="sewing_qty" name="sewing_qty" readonly>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label fw-bold">Input Qty</label>
+                                    <input type="number" class="form-control" id="secondary_in_qty" name="secondary_in_qty">
                                 </div>
                             </div>
                         </div>
@@ -293,8 +316,6 @@
 
     <script>
         document.addEventListener("DOMContentLoaded", async function () {
-            document.getElementById('scannedSecondaryIn').focus();
-
             $('.select2').select2({
                 theme: "bootstrap-5",
                 width: $(this).data('width') ? $(this).data('width') : $(this).hasClass('w-100') ? '100%' : 'style',
@@ -355,6 +376,101 @@
             })
 
             $('#selectedSecondary').trigger('change');
+        });
+
+        function updateColorList() {
+            let selectElement = document.getElementById("color");
+
+            if (selectElement) {
+                selectElement.innerHTML = null;
+
+                $.ajax({
+                    type: "get",
+                    url: "{{ route('get-color') }}",
+                    data: {
+                        "act_costing_id": $("#worksheet").val()
+                    },
+                    dataType: "json",
+                    success: function (response)  {
+                        console.log(response);
+
+                        if (response && response.length > 0) {
+                            let initOption = document.createElement("option");
+                            initOption.value = "";
+                            initOption.text = "Pilih Color";
+
+                            if (selectElement) {
+                                selectElement.appendChild(initOption);
+
+                                response.forEach(item => {
+                                    let option = document.createElement("option");
+                                    option.value = item.color;
+                                    option.text = item.color;
+
+                                    selectElement.appendChild(option);
+
+                                    console.log(item);
+                                });
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        function updateSizeList() {
+            let selectElement = document.getElementById("size");
+
+            if (selectElement) {
+                selectElement.innerHTML = null;
+
+                $.ajax({
+                    type: "get",
+                    url: "{{ route('get-size') }}",
+                    data: {
+                        "act_costing_id": $("#worksheet").val(),
+                        "color": $("#color").val(),
+                    },
+                    dataType: "json",
+                    success: function (response)  {
+                        console.log(response);
+
+                        if (response && response.length > 0) {
+                            let initOption = document.createElement("option");
+                            initOption.value = "";
+                            initOption.text = "Pilih Size";
+
+                            if (selectElement) {
+                                selectElement.appendChild(initOption);
+
+                                response.forEach(item => {
+                                    let option = document.createElement("option");
+                                    option.value = item.so_det_id;
+                                    option.text = item.size;
+
+                                    selectElement.appendChild(option);
+
+                                    console.log(item);
+                                });
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        $("#worksheet").on("change", function (event) {
+            let selectedOption = this.options[this.selectedIndex];
+
+            $("#style").val(selectedOption.getAttribute("data-style"));
+
+            updateColorList();
+        });
+
+        $("#color").on("change", function (event) {
+            let selectedOption = this.options[this.selectedIndex];
+
+            updateSizeList();
         });
 
         // Secondary In List
@@ -464,14 +580,11 @@
                 type: "post",
                 url: "{{ route('in-submit-secondary-in') }}",
                 data: {
-                    scannedSecondaryIn: $("#scannedSecondaryIn").val(),
                     selectedSecondary: $("#selectedSecondary").val(),
                 },
                 dataType: "json",
                 success: function (response) {
                     document.getElementById("loading").classList.add("d-none");
-
-                    $("#scannedSecondaryIn").focus();
 
                     if (response) {
                         showNotification(response.status, response.message);
@@ -496,99 +609,14 @@
             });
         }
 
-        var scannedSecondaryIn = document.getElementById("scannedSecondaryIn");
-        scannedSecondaryIn.addEventListener("change", async function () {
-            @this.scannedSecondaryIn = this.value;
-
-            // submit
-            // @this.submitSecondaryIn();
-            submitSecondaryIn();
-
-            this.value = '';
-        });
-
         // init scan
         Livewire.on('qrInputFocus', async (mode) => {
             console.log(mode);
 
             if (mode == "in") {
-                document.getElementById('scannedSecondaryIn').focus();
-
                 reloadSecondaryInListTable();
             }
         });
-
-        function getMasterPlanData(type) {
-            if (type != "in" && type != "out") {
-                type = 'in';
-            }
-            console.log(type, $("#secondary-in-date").val());
-            $.ajax({
-                url: "{{ route("get-master-plan") }}",
-                method: "GET",
-                data: {
-                    date: $("#secondary-in-date").val(),
-                    line: $("#select-secondary-in-line").val(),
-                },
-                success: function (res) {
-                    document.getElementById("select-secondary-in-master-plan").innerHTML = "";
-
-                    let selectElement = document.getElementById("select-secondary-in-master-plan")
-
-                    let option = document.createElement("option");
-                    option.value = "";
-                    option.innerText = "All Master Plan";
-                    selectElement.appendChild(option);
-
-                    $("#select-secondary-in-master-plan").val("").trigger("change");
-
-                    if (res && res.length > 0) {
-                        res.forEach(item => {
-                            let option = document.createElement("option");
-                            option.value = item.id;
-                            option.innerText = item.no_ws + " - " + item.style + " - " + item.color;
-
-                            selectElement.appendChild(option);
-                        });
-                    }
-                }
-            });
-        }
-
-        function getSizeData(type) {
-            if (type != "in" && type != "out") {
-                type = 'in';
-            }
-            $.ajax({
-                url: "{{ route("get-size") }}",
-                method: "GET",
-                data: {
-                    master_plan: $("#select-defect-" + type + "-master-plan").val(),
-                },
-                success: function (res) {
-                    document.getElementById("select-defect-" + type + "-size").innerHTML = "";
-
-                    let selectElement = document.getElementById("select-defect-" + type + "-size")
-
-                    let option = document.createElement("option");
-                    option.value = "";
-                    option.innerText = "Select Size";
-                    selectElement.appendChild(option);
-
-                    $("#select-defect-" + type + "-size").val("").trigger("change");
-
-                    if (res && res.length > 0) {
-                        res.forEach(item => {
-                            let option = document.createElement("option");
-                            option.value = item.id;
-                            option.innerText = item.size;
-
-                            selectElement.appendChild(option);
-                        });
-                    }
-                }
-            });
-        }
 
         function defectInCheck(element) {
             Livewire.emit("loadingStart");

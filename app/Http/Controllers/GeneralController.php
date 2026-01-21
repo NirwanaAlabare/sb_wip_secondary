@@ -54,7 +54,7 @@ class GeneralController extends Controller
         return $masterPlans;
     }
 
-    public function getSize(Request $request) {
+    public function getMasterPlanSize(Request $request) {
         if ($request->master_plan) {
             $sizes = MasterPlan::selectRaw("
                 so_det.id,
@@ -74,6 +74,46 @@ class GeneralController extends Controller
         }
 
         return null;
+    }
+
+    public function getColor(Request $request) {
+        $colors = DB::connection("mysql_sb")->select("select color from so_det left join so on so.id = so_det.id_so left join act_costing on act_costing.id = so.id_cost where act_costing.id = '" . $request->act_costing_id . "' group by color");
+
+        return $colors ? $colors : null;
+    }
+
+    public function getSize(Request $request) {
+        $sizes = DB::connection("mysql_sb")->table("so_det")->selectRaw("
+                so_det.id as so_det_id,
+                act_costing.kpno no_ws,
+                so_det.color,
+                so_det.size,
+                so_det.dest,
+                (CASE WHEN so_det.dest IS NOT NULL AND so_det.dest != '-' THEN CONCAT(so_det.size, ' - ', so_det.dest) ELSE so_det.size END) size_dest
+            ")->
+            leftJoin("so", "so.id", "=", "so_det.id_so")->
+            leftJoin("act_costing", "act_costing.id", "=", "so.id_cost")->
+            leftJoin("master_size_new", "master_size_new.size", "=", "so_det.size")->
+            where("act_costing.id", $request->act_costing_id)->
+            where("so_det.color", $request->color)->
+            groupBy("so_det.id")->
+            orderBy("master_size_new.urutan")->
+            get();
+
+        return $sizes ? $sizes : null;
+    }
+
+    public function getOutputSewing(Request $request) {
+        $outputs = DB::connection("mysql_sb")->table("output_rfts")->selectRaw("
+                COUNT(output_rfts.id) total_rft
+            ")->
+            leftJoin("so_det", "so_det.id", "=", "output_rfts.so_det_id")->
+            leftJoin("so", "so.id", "=", "so_det.id_so")->
+            leftJoin("act_costing", "act_costing.id", "=", "so.id_cost")->
+            where("act_costing.id", $request->act_costing_id)->
+            where("so_det.color", $request->color)->
+            where("so_det.size", $request->size)->
+            get();
     }
 
     public function getSecondaryMaster(Request $request) {
