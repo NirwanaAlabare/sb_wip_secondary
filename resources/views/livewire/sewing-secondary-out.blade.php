@@ -9,18 +9,20 @@
             <div class="loading"></div>
         </div>
     </div>
-    <div class="row g-3">
-        <div class="d-flex justify-content-center">
-            <div class="d-flex justify-content-end gap-1 w-50">
-                <button type="button" class="btn btn-sm btn-sb-secondary-outline {{ $mode == "sum" ? "active" : "" }}" {{ $mode == "sum" ? "disabled" : "" }} id="button-in-out">SUM</button>
-                <button type="button" class="btn btn-sm btn-rework {{ $mode == "out" ? "active" : "" }}" {{ $mode == "out" ? "disabled" : "" }} id="button-out">OUT</button>
-            </div>
-            <div class="d-flex justify-content-end w-50" wire:ignore>
-                <select class="form-select select2 w-auto" name="selectedSecondary" id="selectedSecondary">
-                    @foreach ($secondaryMaster as $secondary)
-                        <option value="{{ $secondary->id }}">{{ $secondary->secondary }}</option>
-                    @endforeach
-                </select>
+    <div class="row justify-content-center g-3">
+        <div class="col-12">
+            <div class="d-flex flex-column align-items-center justify-content-center gap-3">
+                <div class="d-flex justify-content-center w-50" wire:ignore>
+                    <select class="form-select form-select-sm select2 w-auto" name="selectedSecondary" id="selectedSecondary">
+                        @foreach ($secondaryMaster as $secondary)
+                            <option value="{{ $secondary->id }}">{{ $secondary->secondary }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="d-flex justify-content-center gap-1 w-50">
+                    <button type="button" class="btn btn-sm btn-sb-secondary-outline {{ $mode == "sum" ? "active" : "" }}" {{ $mode == "sum" ? "disabled" : "" }} id="button-in-out">SUM</button>
+                    <button type="button" class="btn btn-sm btn-rework {{ $mode == "out" ? "active" : "" }}" {{ $mode == "out" ? "disabled" : "" }} id="button-out">OUT</button>
+                </div>
             </div>
         </div>
 
