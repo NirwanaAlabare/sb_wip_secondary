@@ -20,7 +20,7 @@
                         </div>
                     @enderror
                     {{-- <div id="reject-reader" width="600px"></div> --}}
-                    <input type="text" class="qty-input" id="scannedRejectItem" name="scannedRejectItem">
+                    <input type="text" class="qty-input h-75" id="scannedRejectItem" name="scannedRejectItem">
                 </div>
             </div>
         </div>
@@ -171,6 +171,76 @@
         </div>
     </div>
 
+    {{-- Log --}}
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card mt-3" wire:ignore>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <input type="date" class="form-control" id="defect-reject-log-date" name="defect-reject-log-date">
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-bordered w-100" id="defect-reject-secondary-out-list-table">
+                            <thead>
+                                <tr>
+                                    <th>Kode Numbering</th>
+                                    <th>No. WS</th>
+                                    <th>Style</th>
+                                    <th>Color</th>
+                                    <th>Size</th>
+                                    <th>Line</th>
+                                    <th>Secondary</th>
+                                    <th>Total</th>
+                                    <th>Defect Type</th>
+                                    <th>Defect Area</th>
+                                    <th>Status</th>
+                                    <th>Image</th>
+                                    <th>Created By</th>
+                                    <th>Created At</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card mt-3" wire:ignore>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <input type="date" class="form-control" id="reject-log-date" name="reject-log-date">
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-bordered w-100" id="reject-secondary-out-list-table">
+                            <thead>
+                                <tr>
+                                    <th>Kode Numbering</th>
+                                    <th>No. WS</th>
+                                    <th>Style</th>
+                                    <th>Color</th>
+                                    <th>Size</th>
+                                    <th>Line</th>
+                                    <th>Secondary</th>
+                                    <th>Total</th>
+                                    <th>Defect Type</th>
+                                    <th>Defect Area</th>
+                                    <th>Status</th>
+                                    <th>Image</th>
+                                    <th>Created By</th>
+                                    <th>Created At</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     {{-- Rapid Reject --}}
     <div class="modal" tabindex="-1" id="rapid-reject-modal" wire:ignore.self>
         <div class="modal-dialog">
@@ -206,35 +276,40 @@
 @push('scripts')
     <script>
         document.addEventListener("DOMContentLoaded", () => {
-            // Reject Type
-            $('#reject-type-select2').select2({
-                theme: "bootstrap-5",
-                width: $( this ).data( 'width' ) ? $( this ).data( 'width' ) : $( this ).hasClass( 'w-100' ) ? '100%' : 'style',
-                placeholder: $( this ).data( 'placeholder' ),
-            });
-
-            $('#reject-type-select2').on('change', function (e) {
-                var rejectType = $('#reject-type-select2').select2("val");
-                @this.set('rejectType', rejectType);
-            });
-
-            // Reject Area
-            $('#reject-area-select2').select2({
-                theme: "bootstrap-5",
-                width: $( this ).data( 'width' ) ? $( this ).data( 'width' ) : $( this ).hasClass( 'w-100' ) ? '100%' : 'style',
-                placeholder: $( this ).data( 'placeholder' ),
-            });
-
-            $('#reject-area-select2').on('change', function (e) {
-                var rejectArea = $('#reject-area-select2').select2("val");
-                @this.set('rejectArea', rejectArea);
-            });
-
             Livewire.on('clearSelectRejectAreaPoint', () => {
                 $('#reject-type-select2').val("").trigger('change');
                 $('#reject-area-select2').val("").trigger('change');
             });
         })
+
+        // On Livewire Render
+        document.addEventListener('livewire:load', () => {
+            Livewire.hook('message.processed', (message, component) => {
+                // Reject Type
+                $('#reject-type-select2').select2({
+                    theme: "bootstrap-5",
+                    width: $( this ).data( 'width' ) ? $( this ).data( 'width' ) : $( this ).hasClass( 'w-100' ) ? '100%' : 'style',
+                    placeholder: $( this ).data( 'placeholder' ),
+                });
+
+                $('#reject-type-select2').on('change', function (e) {
+                    var rejectType = $('#reject-type-select2').select2("val");
+                    @this.set('rejectType', rejectType);
+                });
+
+                // Reject Area
+                $('#reject-area-select2').select2({
+                    theme: "bootstrap-5",
+                    width: $( this ).data( 'width' ) ? $( this ).data( 'width' ) : $( this ).hasClass( 'w-100' ) ? '100%' : 'style',
+                    placeholder: $( this ).data( 'placeholder' ),
+                });
+
+                $('#reject-area-select2').on('change', function (e) {
+                    var rejectArea = $('#reject-area-select2').select2("val");
+                    @this.set('rejectArea', rejectArea);
+                });
+            })
+        });
 
         // Scan QR
         // if (document.getElementById("reject-reader")) {
@@ -332,6 +407,179 @@
             }
 
             $("#scannedRejectItem").focus();
+        }
+
+        // DEFECT Secondary Out List
+        let defectRejectecondaryOutListTable = $("#defect-reject-secondary-out-list-table").DataTable({
+            serverSide: true,
+            processing: true,
+            ordering: false,
+            searching: false,
+            paging: true,
+            lengthChange: false,
+            ajax: {
+                url: '{{ route('out-get-secondary-out-log') }}',
+                dataType: 'json',
+                data: function (d) {
+                    d.date = $("#defect-reject-log-date").val();
+                    d.status = "defect";
+                    d.selectedSecondary = $("#selectedSecondary").val();
+
+                }
+            },
+            columns: [
+                {
+                    data: 'kode_numbering',
+                },
+                {
+                    data: 'ws',
+                },
+                {
+                    data: 'style',
+                },
+                {
+                    data: 'color',
+                },
+                {
+                    data: 'size',
+                },
+                {
+                    data: 'sewing_line',
+                },
+                {
+                    data: 'secondary',
+                },
+                {
+                    data: 'output',
+                },
+                {
+                    data: 'defect_type',
+                },
+                {
+                    data: 'defect_area',
+                },
+                {
+                    data: 'status',
+                },
+                {
+                    data: 'gambar',
+                },
+                {
+                    data: 'created_by_username',
+                },
+                {
+                    data: 'secondary_out_time',
+                },
+            ],
+            columnDefs: [
+                // {
+                //     targets: [0],
+                //     className: "text-nowrap text-center align-middle",
+                //     render: (data, type, row, meta) => {
+                //         return meta.row+1;
+                //     }
+                // },
+                {
+                    targets: "_all",
+                    className: "text-nowrap text-center align-middle"
+                },
+                {
+                    targets: [11],
+                    render: (data, type, row, meta) => {
+                        return `<button class="btn btn-dark" onclick="onShowDefectAreaImage('` + row.gambar + `', ` + row.defect_area_x + `, ` + row.defect_area_y + `)"><i class="fa fa-image"></i></button>`
+                    }
+                }
+            ],
+        });
+
+        function defectRejectSecondaryOutListReload() {
+            $("#defect-reject-secondary-out-list-table").DataTable().ajax.reload();
+        }
+
+        // REJECT Secondary Out List
+        let rejectSecondaryOutListTable = $("#reject-secondary-out-list-table").DataTable({
+            serverSide: true,
+            processing: true,
+            ordering: false,
+            searching: false,
+            paging: true,
+            lengthChange: false,
+            ajax: {
+                url: '{{ route('out-get-secondary-out-log') }}',
+                dataType: 'json',
+                data: function (d) {
+                    d.date = $("#reject-log-date").val();
+                    d.status = "reject";
+                    d.selectedSecondary = $("#selectedSecondary").val();
+                }
+            },
+            columns: [
+                {
+                    data: 'kode_numbering',
+                },
+                {
+                    data: 'ws',
+                },
+                {
+                    data: 'style',
+                },
+                {
+                    data: 'color',
+                },
+                {
+                    data: 'size',
+                },
+                {
+                    data: 'sewing_line',
+                },
+                {
+                    data: 'secondary',
+                },
+                {
+                    data: 'output',
+                },
+                {
+                    data: 'defect_type',
+                },
+                {
+                    data: 'defect_area',
+                },
+                {
+                    data: 'status',
+                },
+                {
+                    data: 'gambar',
+                },
+                {
+                    data: 'created_by_username',
+                },
+                {
+                    data: 'secondary_out_time',
+                },
+            ],
+            columnDefs: [
+                // {
+                //     targets: [0],
+                //     className: "text-nowrap text-center align-middle",
+                //     render: (data, type, row, meta) => {
+                //         return meta.row+1;
+                //     }
+                // },
+                {
+                    targets: "_all",
+                    className: "text-nowrap text-center align-middle"
+                },
+                {
+                    targets: [11],
+                    render: (data, type, row, meta) => {
+                        return `<button class="btn btn-dark" onclick="onShowDefectAreaImage('` + row.gambar + `', ` + row.defect_area_x + `, ` + row.defect_area_y + `)"><i class="fa fa-image"></i></button>`
+                    }
+                }
+            ]
+        });
+
+        function rejectSecondaryOutListReload() {
+            $("#reject-secondary-out-list-table").DataTable().ajax.reload();
         }
     </script>
 @endpush

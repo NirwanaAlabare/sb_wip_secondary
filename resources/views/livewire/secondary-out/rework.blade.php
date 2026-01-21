@@ -13,7 +13,6 @@
             <div class="card h-100">
                 <div class="card-header d-flex justify-content-between align-items-center bg-rework text-light">
                     <p class="mb-0 fs-5">Scan QR</p>
-                    <button class="btn btn-dark" wire:click="$emit('showModal', 'rapidRework')"><i class="fa-solid fa-layer-group"></i></button>
                 </div>
                 <div class="card-body" wire:ignore.self>
                     @error('numberingInput')
@@ -23,7 +22,7 @@
                         </div>
                     @enderror
                     {{-- <div id="rework-reader" width="600px"></div> --}}
-                    <input type="text" class="qty-input h-100" id="scannedReworkItem" name="scannedReworkItem">
+                    <input type="text" class="qty-input h-75" id="scannedReworkItem" name="scannedReworkItem">
                 </div>
             </div>
         </div>
@@ -245,6 +244,9 @@
         Livewire.on('qrInputFocus', async (type) => {
             if (type == 'rework') {
                 scannedReworkItemInput.focus();
+
+                defectReworkSecondaryOutListReload();
+                reworkSecondaryOutListReload();
             }
         });
 
@@ -272,6 +274,7 @@
                 data: function (d) {
                     d.date = $("#defect-rework-log-date").val();
                     d.status = "defect";
+                    d.selectedSecondary = $("#selectedSecondary").val();
                 }
             },
             columns: [
@@ -337,14 +340,18 @@
                     }
                 }
             ],
-            rowCallback: function (row, data, iDisplayIndex) {
-                var info = this.api().page.info();
-                var page = info.page;
-                var length = info.length;
-                var index = (page * length + (iDisplayIndex + 1));
-                $('td:eq(0)', row).html(index); // Assuming the first column is for the index
-            }
+            // rowCallback: function (row, data, iDisplayIndex) {
+            //     var info = this.api().page.info();
+            //     var page = info.page;
+            //     var length = info.length;
+            //     var index = (page * length + (iDisplayIndex + 1));
+            //     $('td:eq(0)', row).html(index); // Assuming the first column is for the index
+            // }
         });
+
+        function defectReworkSecondaryOutListReload() {
+            $("#defect-rework-secondary-out-list-table").DataTable().ajax.reload();
+        }
 
         // REWORK Secondary Out List
         let reworkSecondaryOutListTable = $("#rework-secondary-out-list-table").DataTable({
@@ -360,6 +367,7 @@
                 data: function (d) {
                     d.date = $("#rework-log-date").val();
                     d.status = "rework";
+                    d.selectedSecondary = $("#selectedSecondary").val();
                 }
             },
             columns: [
@@ -424,14 +432,11 @@
                         return `<button class="btn btn-dark" onclick="onShowDefectAreaImage('` + row.gambar + `', ` + row.defect_area_x + `, ` + row.defect_area_y + `)"><i class="fa fa-image"></i></button>`
                     }
                 }
-            ],
-            rowCallback: function (row, data, iDisplayIndex) {
-                var info = this.api().page.info();
-                var page = info.page;
-                var length = info.length;
-                var index = (page * length + (iDisplayIndex + 1));
-                $('td:eq(0)', row).html(index); // Assuming the first column is for the index
-            }
+            ]
         });
+
+        function reworkSecondaryOutListReload() {
+            $("#rework-secondary-out-list-table").DataTable().ajax.reload();
+        }
     </script>
 @endpush

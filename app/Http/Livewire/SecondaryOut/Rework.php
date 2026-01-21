@@ -12,6 +12,9 @@ use App\Models\SignalBit\SecondaryOut;
 use App\Models\SignalBit\Rft;
 use App\Models\SignalBit\Defect;
 use App\Models\SignalBit\Rework as ReworkModel;
+use App\Models\SignalBit\SewingSecondaryIn;
+use App\Models\SignalBit\SewingSecondaryOut;
+use App\Models\SignalBit\SewingSecondaryOutDefect;
 use Carbon\Carbon;
 use DB;
 
@@ -41,6 +44,8 @@ class Rework extends Component
     public $rapidRework;
     public $rapidReworkCount;
 
+    public $selectedSecondary;
+
     protected $rules = [
         'sizeInput' => 'required',
         'noCutInput' => 'required',
@@ -56,12 +61,13 @@ class Rework extends Component
     protected $listeners = [
         'hideDefectAreaImageClear' => 'hideDefectAreaImage',
         'setAndSubmitInputRework' => 'setAndSubmitInput',
-        'toInputPanel' => 'resetError'
+        'toInputPanel' => 'resetError',
+        'updateSelectedSecondary' => 'updateSelectedSecondary'
     ];
 
     private function checkIfNumberingExists($numberingInput = null): bool
     {
-        $currentData = DB::table('output_secondary_out')->where('kode_numbering', ($numberingInput ?? $this->numberingInput))->first();
+        $currentData = DB::table('output_secondary_out')->where('kode_numbering', ($numberingInput ?? $this->numberingInput))->where("status", "!=", "defect")->first();
         if ($currentData) {
             $this->addError('numberingInput', 'Kode QR sudah discan di '.strtoupper($currentData->status).'.');
 
@@ -99,7 +105,7 @@ class Rework extends Component
         $this->emit('loadReworkPageJs');
     }
 
-    public function mount(SessionManager $session)
+    public function mount(SessionManager $session, $selectedSecondary)
     {
         $this->massSize = '';
 
@@ -113,6 +119,8 @@ class Rework extends Component
 
         $this->rapidRework = [];
         $this->rapidReworkCount = 0;
+
+        $this->selectedSecondary = $selectedSecondary;
     }
 
     public function closeInfo()
@@ -194,41 +202,51 @@ class Rework extends Component
         }
 
         // Get Secondary Out Defect Detail
-        $scannedDefectData = SecondaryOutDefect::where("output_secondary_out.kode_numbering", $numberingInput)->first();
+        $scannedDefectData = SewingSecondaryOutDefect::where("kode_numbering", $numberingInput)->first();
 
         if ($scannedDefectData) {
             $now = Carbon::now();
 
-            // Update Secondary Out Defect Detail
-            $updateDefect = SecondaryOutDefect::where("id", $scannedDefectData->id)->update([
-                "status" => "reworked",
-                "reworked_by" => Auth::user()->line_id,
-                "reworked_by_username" => Auth::user()->username,
-                "reworked_at" => $now
-            ]);
-
-            // Update Secondary Out Defect
-            $updateSecondaryOut = SecondaryOut::where("id", $scannedDefectData->secondary_out_id)->update([
-                "status" => "rework",
-            ]);
-
             // Get Secondary Out
             $secondaryInData = $scannedDefectData->secondaryOut->secondaryIn;
+
+            if ($secondaryInData) {
+
+                if ($secondaryInData->secondary_id == $this->selectedSecondary) {
+
+                    // Update Secondary Out Defect Detail
+                    $updateDefect = SewingSecondaryOutDefect::where("id", $scannedDefectData->id)->update([
+                        "status" => "reworked",
+                        "reworked_by" => Auth::user()->line_id,
+                        "reworked_by_username" => Auth::user()->username,
+                        "reworked_at" => $now
+                    ]);
+
+                    // Update Secondary Out Defect
+                    $updateSecondaryOut = SewingSecondaryOut::where("id", $scannedDefectData->secondary_out_id)->update([
+                        "status" => "rework",
+                    ]);
+
+                } else {
+                    $this->emit('alert', 'error', "Secondary IN tidak ditemukan di ".$this->selectedSecondary);
+                }
+
+            }
 
             $this->sizeInput = '';
             $this->sizeInputText = '';
             $this->noCutInput = '';
             $this->numberingInput = '';
 
-            if ($updateDefect && $updateSecondaryOut) {
+            if ($updateDefect && $updateSecondaryOut && $secondaryInData) {
                 $scannedDetail = $secondaryInData->rft;
                 if ($scannedDetail) {
-                    $this->worksheetRework = $scannedDetail->so_det->so->actCosting->kpno;
-                    $this->styleRework = $scannedDetail->so_det->so->actCosting->styleno;
-                    $this->colorRework = $scannedDetail->so_det->color;
-                    $this->sizeRework = $scannedDetail->so_det->size;
+                    $this->worksheetRework = $scannedDetail->soDet->so->actCosting->kpno;
+                    $this->styleRework = $scannedDetail->soDet->so->actCosting->styleno;
+                    $this->colorRework = $scannedDetail->soDet->color;
+                    $this->sizeRework = $scannedDetail->soDet->size;
                     $this->kodeRework = $scannedDetail->kode_numbering;
-                    $this->lineRework = $scannedDetail->userLine->username;
+                    $this->lineRework = $scannedDetail->userSbWip->userPassword->username;
                 }
 
                 $this->emit('alert', 'success', "DEFECT dengan ID : ".$scannedDefectData->kode_numbering." berhasil di REWORK.");
@@ -293,7 +311,7 @@ class Rework extends Component
                     $now = Carbon::now();
 
                     // Update Secondary Out Defect Detail
-                    $updateDefect = SecondaryOutDefect::where("id", $scannedDefectData->id)->update([
+                    $updateDefect = SewingSecondaryOutDefect::where("id", $scannedDefectData->id)->update([
                         'status' => 'reworked',
                         "reworked_by" => Auth::user()->id,
                         "reworked_by_username" => Auth::user()->username,
@@ -301,7 +319,7 @@ class Rework extends Component
                     ]);
 
                     // Update Secondary Out Defect
-                    $updateSecondaryOut = SecondaryOut::where("id", $scannedDefectData->secondary_out_id)->update([
+                    $updateSecondaryOut = SewingSecondaryOut::where("id", $scannedDefectData->secondary_out_id)->update([
                         'status' => 'rework',
                     ]);
 
@@ -324,6 +342,10 @@ class Rework extends Component
 
         $this->rapidRework = [];
         $this->rapidReworkCount = 0;
+    }
+
+    public function updateSelectedSecondary($selectedSecondary) {
+        $this->selectedSecondary = $selectedSecondary;
     }
 
     public function render(SessionManager $session)

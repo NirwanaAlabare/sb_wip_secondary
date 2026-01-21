@@ -42,7 +42,7 @@
     </div> --}}
 
     {{-- Production Panels --}}
-    <div class="production-panel row row-gap-3" id="production-panel">
+    <div class="production-panel row row-gap-3 mb-3" id="production-panel">
         @if ($panels)
             <div class="production-panel-info row row-gap-3 justify-content-end align-items-center mb-3">
                 <div class="col-md-3">
@@ -51,7 +51,7 @@
                             <h5 class="card-title text-center">WIP</h5>
                         </div>
                         <div class="card-body">
-                            <h5 class="text-center">0</h5>
+                            <h5 class="text-center">{{ $inWip }}</h5>
                         </div>
                     </div>
                 </div>
@@ -61,7 +61,7 @@
                             <h5 class="card-title text-center">DEFECT</h5>
                         </div>
                         <div class="card-body">
-                            <h5 class="text-center">0</h5>
+                            <h5 class="text-center">{{ $outDefect }}</h5>
                         </div>
                     </div>
                 </div>
@@ -117,27 +117,27 @@
         {{-- Rft --}}
         {{-- @if ($rft) --}}
         <div class="{{ $rft ? '' : 'd-none' }}">
-            @livewire('secondary-out.rft')
+            @livewire('secondary-out.rft', ['selectedSecondary' => $selectedSecondary])
         </div>
         {{-- @endif --}}
 
         {{-- Defect --}}
         {{-- @if ($defect) --}}
         <div class="{{ $defect ? '' : 'd-none' }}">
-            @livewire('secondary-out.defect')
+            @livewire('secondary-out.defect', ['selectedSecondary' => $selectedSecondary])
         </div>
         {{-- @endif --}}
 
         {{-- Reject --}}
         {{-- @if ($reject) --}}
         <div class="{{ $reject ? '' : 'd-none' }}">
-            @livewire('secondary-out.reject')
+            @livewire('secondary-out.reject', ['selectedSecondary' => $selectedSecondary])
         </div>
         {{-- @endif --}}
 
         {{-- Rework --}}
         <div class="{{ $rework ? '' : 'd-none' }}">
-            @livewire('secondary-out.rework')
+            @livewire('secondary-out.rework', ['selectedSecondary' => $selectedSecondary])
         </div>
     </div>
 
@@ -186,6 +186,31 @@
             </div>
         </div>
     </div>
+
+    <div class="card {{ $panels ? '' : 'd-none' }}">
+            <div class="card-header bg-rework text-light">
+                <h5 class="card-title">Total Output {{ $selectedSecondaryText }}</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-end mb-3">
+                    <input type="date" class="form-control w-auto" value="{{ $date }}" id="secondary-out-date" onchange="secondaryOutTotalReload()">
+                </div>
+                <div class="table-responsive" wire:ignore>
+                    <table class="table table-bordered w-100" id="secondary-out-total-table">
+                        <thead>
+                            <tr>
+                                <th>Tanggal Plan</th>
+                                <th>Master Plan</th>
+                                <th>RFT</th>
+                                <th>DEFECT</th>
+                                <th>REWORK</th>
+                                <th>REJECT</th>
+                            </tr>
+                        </thead>
+                    </table>
+                </div>
+            </div>
+        </div>
 
     @if ($panels)
         <div class="w-100">
@@ -263,5 +288,66 @@
         Livewire.on('reloadPage', () => {
             location.reload();
         })
+
+        let secondaryOutTotal = $("#secondary-out-total-table").DataTable({
+            serverSide: true,
+            processing: true,
+            ordering: false,
+            searching: false,
+            paging: true,
+            lengthChange: false,
+            ajax: {
+                url: '{{ route('out-get-secondary-out-total') }}',
+                dataType: 'json',
+                data: function (d) {
+                    d.date = $("#secondary-out-date").val();
+                    d.selectedSecondary = $("#selectedSecondary").val();
+                }
+            },
+            columns: [
+                {
+                    data: 'master_plan_tanggal',
+                },
+                {
+                    data: 'master_plan_id',
+                },
+                {
+                    data: 'total_rft',
+                },
+                {
+                    data: 'total_defect',
+                },
+                {
+                    data: 'total_rework',
+                },
+                {
+                    data: 'total_reject',
+                },
+            ],
+            columnDefs: [
+                {
+                    targets: "_all",
+                    className: "text-nowrap text-center align-middle"
+                },
+                {
+                    targets: [1],
+                    render: (data, type, row, meta) => {
+                        return row.master_plan_ws + "<br>" + row.master_plan_style + "<br>" + row.master_plan_color;
+                    }
+                }
+            ],
+        });
+
+        function secondaryOutTotalReload() {
+            $("#secondary-out-total-table").DataTable().ajax.reload();
+        }
+
+        Livewire.on("updateSelectedSecondary", function () {
+            secondaryOutTotalReload();
+        })
+
+        Livewire.on('toInputPanel', (type) => {
+            secondaryOutTotalReload();
+        });
     </script>
 @endpush

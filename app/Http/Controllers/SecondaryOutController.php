@@ -8,6 +8,7 @@ use App\Models\SignalBit\Defect;
 use App\Models\SignalBit\DefectPacking;
 use App\Models\SignalBit\OutputFinishing;
 use App\Models\SignalBit\SewingSecondaryIn;
+use App\Models\SignalBit\SewingSecondaryOut;
 use App\Models\SignalBit\SewingSecondaryMaster;
 use App\Exports\SecondaryInOutExport;
 use Maatwebsite\Excel\Facades\Excel;
@@ -224,9 +225,10 @@ class SecondaryOutController extends Controller
         $secondaryInOutDaily = SewingSecondaryIn::selectRaw("
                 DATE(output_secondary_in.created_at) tanggal,
                 COUNT(output_secondary_in.id) total_in,
-                SUM(CASE WHEN output_secondary_out.status = 'rft' OR output_secondary_out.status = 'rework' THEN 1 ELSE 0 END) total_rft,
+                SUM(CASE WHEN output_secondary_out.status = 'rft' THEN 1 ELSE 0 END) total_rft,
                 SUM(CASE WHEN output_secondary_out.status = 'defect' THEN 1 ELSE 0 END) total_defect,
                 SUM(CASE WHEN output_secondary_out.status = 'reject' THEN 1 ELSE 0 END) total_reject,
+                SUM(CASE WHEN output_secondary_out.status = 'rework' THEN 1 ELSE 0 END) total_rework,
                 SUM(CASE WHEN output_secondary_out.id IS NOT NULL THEN 1 ELSE 0 END) total_process
             ")->
             leftJoin("output_secondary_out", "output_secondary_out.secondary_in_id", "=", "output_secondary_in.id")->
@@ -234,7 +236,7 @@ class SecondaryOutController extends Controller
             leftJoin("output_rfts", "output_rfts.id", "=", "output_secondary_in.rft_id")->
             where("output_secondary_master.id", $secondary)->
             whereNotNull("output_secondary_out.id")->
-            whereBetween("output_secondary_in.created_at", [$dateFrom." 00:00:00", $dateTo." 23:59:59"])->
+            whereBetween(DB::raw("COALESCE(output_secondary_out.updated_at, output_secondary_out.created_at)"), [$dateFrom." 00:00:00", $dateTo." 23:59:59"])->
             groupByRaw("DATE(output_secondary_in.created_at)")->
             get();
 
@@ -351,74 +353,74 @@ class SecondaryOutController extends Controller
             groupBy("output_secondary_in.id")->
             get();
 
-        return array("secondaryIn" => $secondaryInOutQuery->count(), "secondaryProcess" => $secondaryInOutQuery->where("status", "WIP")->count(), "secondaryRft" => $secondaryInOutQuery->where("status", "RFT")->count(), "secondaryDefect" => $secondaryInOutQuery->where("status", "DEFECT")->count(), "secondaryReject" => $secondaryInOutQuery->where("status", "REJECT")->count());
+        return array("secondaryIn" => $secondaryInOutQuery->count(), "secondaryProcess" => $secondaryInOutQuery->where("status", "WIP")->count(), "secondaryRft" => $secondaryInOutQuery->where("status", "RFT")->count(), "secondaryDefect" => $secondaryInOutQuery->where("status", "DEFECT")->count(), "secondaryRework" => $secondaryInOutQuery->where("status", "REWORK")->count(), "secondaryReject" => $secondaryInOutQuery->where("status", "REJECT")->count());
     }
 
     public function getSecondaryOutList(Request $request)
     {
-        $secondaryInSearch = "";
-        if ($request->secondaryInSearch) {
-            $secondaryInSearch = "
+        $secondaryOutSearch = "";
+        if ($request->secondaryOutSearch) {
+            $secondaryOutSearch = "
                 AND (
-                    master_plan.tgl_plan LIKE '%".$request->secondaryInSearch."%' OR
-                    master_plan.sewing_line LIKE '%".$request->secondaryInSearch."%' OR
-                    act_costing.kpno LIKE '%".$request->secondaryInSearch."%' OR
-                    act_costing.styleno LIKE '%".$request->secondaryInSearch."%' OR
-                    master_plan.color LIKE '%".$request->secondaryInSearch."%' OR
-                    so_det.size LIKE '%".$request->secondaryInSearch."%' OR
-                    output_rfts.kode_numbering LIKE '%".$request->secondaryInSearch."%' OR
-                    output_secondary_in.kode_numbering LIKE '%".$request->secondaryInSearch."%'
+                    master_plan.tgl_plan LIKE '%".$request->secondaryOutSearch."%' OR
+                    master_plan.sewing_line LIKE '%".$request->secondaryOutSearch."%' OR
+                    act_costing.kpno LIKE '%".$request->secondaryOutSearch."%' OR
+                    act_costing.styleno LIKE '%".$request->secondaryOutSearch."%' OR
+                    master_plan.color LIKE '%".$request->secondaryOutSearch."%' OR
+                    so_det.size LIKE '%".$request->secondaryOutSearch."%' OR
+                    output_rfts.kode_numbering LIKE '%".$request->secondaryOutSearch."%' OR
+                    output_secondary_in.kode_numbering LIKE '%".$request->secondaryOutSearch."%'
                 )
             ";
         }
 
-        $secondaryInLine = "";
-        if ($request->secondaryInLine) {
-            $secondaryInLine = "
-                AND master_plan.sewing_line = '".$request->secondaryInLine."'
+        $secondaryOutLine = "";
+        if ($request->secondaryOutLine) {
+            $secondaryOutLine = "
+                AND master_plan.sewing_line = '".$request->secondaryOutLine."'
             ";
         }
 
-        $secondaryInFilterMasterPlan = "";
-        if ($request->secondaryInFilterMasterPlan) {
-            $secondaryInFilterMasterPlan = "
+        $secondaryOutFilterMasterPlan = "";
+        if ($request->secondaryOutFilterMasterPlan) {
+            $secondaryOutFilterMasterPlan = "
                 AND
                 (
-                    act_costing_ws.kpno LIKE '%".$request->secondaryInFilterMasterPlan."%' OR
-                    act_costing.styleno LIKE '%".$request->secondaryInFilterMasterPlan."%' OR
-                    so_det.color LIKE '%".$request->secondaryInFilterMasterPlan."%'
+                    act_costing_ws.kpno LIKE '%".$request->secondaryOutFilterMasterPlan."%' OR
+                    act_costing.styleno LIKE '%".$request->secondaryOutFilterMasterPlan."%' OR
+                    so_det.color LIKE '%".$request->secondaryOutFilterMasterPlan."%'
                 )
             ";
         }
 
-        $secondaryInFilterStyle = "";
-        if ($request->secondaryInFilterStyle) {
-            $secondaryInFilterStyle = "
+        $secondaryOutFilterStyle = "";
+        if ($request->secondaryOutFilterStyle) {
+            $secondaryOutFilterStyle = "
             ";
         }
 
-        $secondaryInFilterColor = "";
-        if ($request->secondaryInFilterColor) {
-            $secondaryInFilterColor = "
+        $secondaryOutFilterColor = "";
+        if ($request->secondaryOutFilterColor) {
+            $secondaryOutFilterColor = "
             ";
         }
 
-        $secondaryInFilterSize = "";
-        if ($request->secondaryInFilterSize) {
-            $secondaryInFilterSize = " AND so_det.size LIKE '%".$request->secondaryInFilterSize."%' ";
+        $secondaryOutFilterSize = "";
+        if ($request->secondaryOutFilterSize) {
+            $secondaryOutFilterSize = " AND so_det.size LIKE '%".$request->secondaryOutFilterSize."%' ";
         }
 
-        $secondaryInFilterAuthor = "";
-        if ($request->secondaryInFilterAuthor) {
-            $secondaryInFilterAuthor = " AND output_secondary_in.created_by_username LIKE '%".$request->secondaryInFilterAuthor."%' ";
+        $secondaryOutFilterAuthor = "";
+        if ($request->secondaryOutFilterAuthor) {
+            $secondaryOutFilterAuthor = " AND output_secondary_in.created_by_username LIKE '%".$request->secondaryOutFilterAuthor."%' ";
         }
 
-        $secondaryInFilterWaktu = "";
-        if ($request->secondaryInFilterWaktu) {
-            $secondaryInFilterWaktu = " AND COALESCE(output_secondary_in.updated_at, output_secondary_in.created_at) LIKE '%".$request->secondaryInFilterWaktu."%' ";
+        $secondaryOutFilterWaktu = "";
+        if ($request->secondaryOutFilterWaktu) {
+            $secondaryOutFilterWaktu = " AND COALESCE(output_secondary_in.updated_at, output_secondary_in.created_at) LIKE '%".$request->secondaryOutFilterWaktu."%' ";
         }
 
-        $secondaryInList = collect(
+        $secondaryOutList = collect(
             DB::select("
                 SELECT
                     output_secondary_in.id,
@@ -450,16 +452,16 @@ class SecondaryOutController extends Controller
                     AND output_rfts.master_plan_id is not null
                     AND output_secondary_in.updated_at >= '2025-12-01 00:00:00'
                     AND output_secondary_master.id = '".$request->selectedSecondary."'
-                    ".$secondaryInSearch."
-                    ".$secondaryInFilterKode."
-                    ".$secondaryInFilterLine."
-                    ".$secondaryInFilterWs."
-                    ".$secondaryInFilterStyle."
-                    ".$secondaryInFilterColor."
-                    ".$secondaryInFilterSize."
-                    ".$secondaryInFilterSecondary."
-                    ".$secondaryInFilterAuthor."
-                    ".$secondaryInFilterWaktu."
+                    ".$secondaryOutSearch."
+                    ".$secondaryOutFilterKode."
+                    ".$secondaryOutFilterLine."
+                    ".$secondaryOutFilterWs."
+                    ".$secondaryOutFilterStyle."
+                    ".$secondaryOutFilterColor."
+                    ".$secondaryOutFilterSize."
+                    ".$secondaryOutFilterSecondary."
+                    ".$secondaryOutFilterAuthor."
+                    ".$secondaryOutFilterWaktu."
                 GROUP BY
                     output_rfts.id
                 ORDER BY
@@ -467,7 +469,7 @@ class SecondaryOutController extends Controller
             ")
         );
 
-        return Datatables::of($secondaryInList)->toJson();
+        return Datatables::of($secondaryOutList)->toJson();
     }
 
     public function getSecondaryOutLog(Request $request)
@@ -478,9 +480,13 @@ class SecondaryOutController extends Controller
         // Status filter
         $status = $request->status;
 
-        $log = collect(DB::select("
+        // Selected Secondary Filter
+        $selectedSecondary = $request->selectedSecondary;
+
+        $log = collect(DB::connection("mysql_sb")->select("
             select
                 output_secondary_out.*,
+                output_secondary_in.kode_numbering,
                 act_costing.kpno ws,
                 act_costing.styleno style,
                 so_det.color,
@@ -510,15 +516,16 @@ class SecondaryOutController extends Controller
                 left join `output_secondary_in` on `output_secondary_in`.`id` = `output_secondary_out`.`secondary_in_id`
                 left join `output_secondary_master` on `output_secondary_master`.`id` = `output_secondary_in`.`secondary_id`
                 left join `output_rfts` on `output_rfts`.`id` = `output_secondary_in`.`rft_id`
-                left join `user_sb_wip` on `user_sb_wip`.`id` = `output_rfts`.`id`
+                left join `user_sb_wip` on `user_sb_wip`.`id` = `output_rfts`.`created_by`
                 left join `userpassword` on `userpassword`.`line_id` = `user_sb_wip`.`line_id`
                 left join `so_det` on `so_det`.`id` = `output_rfts`.`so_det_id`
-                left join `so` on `so`.`id` = `so_det`.`id`
+                left join `so` on `so`.`id` = `so_det`.`id_so`
                 left join `act_costing` on `act_costing`.`id` = `so`.`id_cost`
                 left join `master_plan` on `master_plan`.`id` = `output_rfts`.`master_plan_id`
             where
                 COALESCE(output_secondary_out.updated_at, output_secondary_out.created_at) between '".$date." 00:00:00' and '".$date." 23:59:59'
                 ".($status ? " and output_secondary_out.status = '".$status."' " : "")."
+                ".($selectedSecondary ? " and output_secondary_in.secondary_id = '".$selectedSecondary."' " : "")."
             group by
                 act_costing.kpno,
                 act_costing.styleno,
@@ -531,7 +538,64 @@ class SecondaryOutController extends Controller
         return Datatables::of($log)->toJson();
     }
 
+    public function getSecondaryOutTotal(Request $request)
+    {
+        // Date filter
+        $date = $request->date ? $request->date : date("Y-m-d");
+
+        // Status filter
+        $status = $request->status;
+
+        // Selected Secondary Filter
+        $selectedSecondary = $request->selectedSecondary;
+
+        $total = collect(DB::connection("mysql_sb")->select("
+            select
+                act_costing.kpno ws,
+                act_costing.styleno style,
+                so_det.color,
+                so_det.size,
+                userpassword.username as sewing_line,
+                output_secondary_master.secondary,
+                COUNT(output_secondary_out.id) output,
+                output_secondary_out.created_by_username,
+                master_plan.tgl_plan master_plan_tanggal,
+                master_plan.id as master_plan_id,
+                master_plan_ws.kpno as master_plan_ws,
+                master_plan_ws.styleno as master_plan_style,
+                master_plan.color as master_plan_color,
+                master_plan.sewing_line as master_plan_line,
+                SUM(CASE WHEN output_secondary_out.status = 'rft' THEN 1 ELSE 0 END) total_rft,
+                SUM(CASE WHEN output_secondary_out.status = 'defect' THEN 1 ELSE 0 END) total_defect,
+                SUM(CASE WHEN output_secondary_out.status = 'rework' THEN 1 ELSE 0 END) total_rework,
+                SUM(CASE WHEN output_secondary_out.status = 'reject' THEN 1 ELSE 0 END) total_reject,
+                master_plan.gambar
+            from
+                `output_secondary_out`
+                left join `output_secondary_out_defect` on `output_secondary_out_defect`.`secondary_out_id` = `output_secondary_out`.`id`
+                left join `output_secondary_out_reject` on `output_secondary_out_reject`.`secondary_out_id` = `output_secondary_out`.`id`
+                left join `output_secondary_in` on `output_secondary_in`.`id` = `output_secondary_out`.`secondary_in_id`
+                left join `output_secondary_master` on `output_secondary_master`.`id` = `output_secondary_in`.`secondary_id`
+                left join `output_rfts` on `output_rfts`.`id` = `output_secondary_in`.`rft_id`
+                left join `master_plan` on `master_plan`.`id` = `output_rfts`.`master_plan_id`
+                left join `act_costing` master_plan_ws on master_plan_ws.id = master_plan.id_ws
+                left join `user_sb_wip` on `user_sb_wip`.`id` = `output_rfts`.`created_by`
+                left join `userpassword` on `userpassword`.`line_id` = `user_sb_wip`.`line_id`
+                left join `so_det` on `so_det`.`id` = `output_rfts`.`so_det_id`
+                left join `so` on `so`.`id` = `so_det`.`id_so`
+                left join `act_costing` on `act_costing`.`id` = `so`.`id_cost`
+            where
+                COALESCE(output_secondary_out.updated_at, output_secondary_out.created_at) between '".$date." 00:00:00' and '".$date." 23:59:59'
+                ".($selectedSecondary ? " and output_secondary_in.secondary_id = '".$selectedSecondary."' " : "")."
+            group by
+                master_plan.id,
+                output_secondary_in.secondary_id
+        "));
+
+        return Datatables::of($total)->toJson();
+    }
+
     public function exportSecondaryInOut(Request $request) {
-        return Excel::download(new SecondaryInOutExport($request->dateFrom, $request->dateTo, $request->selectedSecondary), 'Report Defect In Out.xlsx');
+        return Excel::download(new SecondaryOutExport($request->dateFrom, $request->dateTo, $request->selectedSecondary), 'Report Defect In Out.xlsx');
     }
 }

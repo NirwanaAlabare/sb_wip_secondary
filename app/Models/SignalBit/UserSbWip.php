@@ -17,7 +17,7 @@ class UserSbWip extends Model
 
     public function userPassword()
     {
-        return $this->belongsTo(UserLine::class, 'line_id', 'line_id');
+        return $this->belongsTo(UserPassword::class, 'line_id', 'line_id');
     }
 
     public function rfts()

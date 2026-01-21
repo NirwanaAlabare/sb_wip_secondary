@@ -10,7 +10,8 @@ use App\Models\SignalBit\Defect;
 use App\Models\SignalBit\DefectPacking;
 use App\Models\SignalBit\OutputFinishing;
 use App\Models\SignalBit\SewingSecondaryMaster;
-use App\Models\SignalBit\SewingSecondaryIn as SewingSecondaryInModel;
+use App\Models\SignalBit\SewingSecondaryIn;
+use App\Models\SignalBit\SewingSecondaryOut as SewingSecondaryOutModel;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Carbon;
 use Livewire\WithPagination;
@@ -112,6 +113,8 @@ class SewingSecondaryOut extends Component
     public function updatedSelectedSecondary()
     {
         $this->emit("qrInputFocus", $this->mode);
+
+        $this->emit("updateSelectedSecondary", $this->selectedSecondary);
     }
 
     public function render()
@@ -123,20 +126,22 @@ class SewingSecondaryOut extends Component
         $this->secondaryMaster = SewingSecondaryMaster::get();
 
         // All Defect
-        $secondaryInOutDaily = SewingSecondaryInModel::selectRaw("
+        $secondaryInOutDaily = SewingSecondaryIn::selectRaw("
                 DATE(output_secondary_in.created_at) tanggal,
                 COUNT(output_secondary_in.id) total_in,
-                SUM(CASE WHEN output_secondary_out.status = 'rft' OR output_secondary_out.status = 'rework' THEN 1 ELSE 0 END) total_rft,
+                COUNT(output_secondary_out.id) total_out,
+                SUM(CASE WHEN output_secondary_out.status = 'rft' THEN 1 ELSE 0 END) total_rft,
                 SUM(CASE WHEN output_secondary_out.status = 'defect' THEN 1 ELSE 0 END) total_defect,
+                SUM(CASE WHEN output_secondary_out.status = 'rework' THEN 1 ELSE 0 END) total_rework,
                 SUM(CASE WHEN output_secondary_out.status = 'reject' THEN 1 ELSE 0 END) total_reject,
-                SUM(CASE WHEN output_secondary_out.id IS NOT NULL THEN 1 ELSE 0 END) total_process
+                SUM(CASE WHEN output_secondary_out.id IS NULL THEN 1 ELSE 0 END) total_process
             ")->
             leftJoin("output_rfts", "output_rfts.id", "=", "output_secondary_in.rft_id")->
             leftJoin("output_secondary_master", "output_secondary_master.id", "=", "output_secondary_in.secondary_id")->
             leftJoin("output_secondary_out", "output_secondary_out.secondary_in_id", "=", "output_secondary_in.id")->
-            whereBetween("output_secondary_in.created_at", [$this->secondaryInOutFrom." 00:00:00", $this->secondaryInOutTo." 23:59:59"])->
+            whereBetween(DB::raw("COALESCE(output_secondary_out.updated_at, output_secondary_out.created_at)"), [$this->secondaryInOutFrom." 00:00:00", $this->secondaryInOutTo." 23:59:59"])->
             where("output_secondary_master.id", $this->selectedSecondary)->
-            groupByRaw("DATE(output_secondary_in.created_at)")->
+            groupByRaw("DATE(COALESCE(output_secondary_out.updated_at, output_secondary_out.created_at))")->
             get();
 
         $secondaryInOutTotal = $secondaryInOutDaily ? $secondaryInOutDaily->sum("total_in") : 0;
@@ -145,7 +150,7 @@ class SewingSecondaryOut extends Component
             "totalSecondaryIn" => $secondaryInOutDaily ? $secondaryInOutDaily->sum("total_in") : 0,
             "totalSecondaryProcess" => $secondaryInOutDaily ? $secondaryInOutDaily->sum("total_process") : 0,
             "totalSecondaryOut" => $secondaryInOutDaily ? $secondaryInOutDaily->sum("total_out") : 0,
-            "totalSecondaryInOut" => $secondaryInOutDaily->sum("total_in")
+            "totalSecondaryInOut" => $secondaryInOutDaily->sum("total_out")
         ]);
     }
 

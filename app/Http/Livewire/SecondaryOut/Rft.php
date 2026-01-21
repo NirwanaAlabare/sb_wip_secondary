@@ -4,6 +4,7 @@ namespace App\Http\Livewire\SecondaryOut;
 
 use Livewire\Component;
 use Illuminate\Session\SessionManager;
+use App\Models\SignalBit\SewingSecondaryIn;
 use App\Models\SignalBit\SewingSecondaryOut;
 use App\Models\SignalBit\Rft as RftModel;
 use Illuminate\Support\Facades\Auth;
@@ -30,6 +31,8 @@ class Rft extends Component
     public $kodeRft;
     public $lineRft;
 
+    public $selectedSecondary;
+
     protected $rules = [
         'sizeInput' => 'required',
         'noCutInput' => 'required',
@@ -44,10 +47,11 @@ class Rft extends Component
 
     protected $listeners = [
         'setAndSubmitInputRft' => 'setAndSubmitInput',
-        'toInputPanel' => 'resetError'
+        'toInputPanel' => 'resetError',
+        'updateSelectedSecondary' => 'updateSelectedSecondary'
     ];
 
-    public function mount(SessionManager $session)
+    public function mount(SessionManager $session, $selectedSecondary)
     {
         $this->dateRft = null;
 
@@ -65,6 +69,8 @@ class Rft extends Component
         $this->sizeRft = null;
         $this->kodeRft = null;
         $this->lineRft = null;
+
+        $this->selectedSecondary = null;
     }
 
     public function dehydrate()
@@ -136,40 +142,50 @@ class Rft extends Component
 
                 // Check Secondary IN
                 $secondaryInData = SewingSecondaryIn::where("kode_numbering", $numberingInput)->first();
+
+                // Stored Secondary IN Data
+                $scannedDetail = $secondaryInData->rft;
+
                 if ($secondaryInData) {
-                    $insertRft = SewingSecondaryOut::create([
-                        'kode_numbering' => $secondaryInData->kode_numbering,
-                        'secondary_in_id' => $secondaryInData->id,
-                        'status' => 'rft',
-                        'created_by' => Auth::user()->line_id,
-                        'created_by_username' => Auth::user()->username,
-                        'created_at' => Carbon::now(),
-                        'updated_at' => Carbon::now(),
-                    ]);
 
-                    if ($insertRft) {
-                        $this->emit('alert', 'success', "1 output berukuran ".$this->sizeInputText." berhasil terekam.");
+                    if ($secondaryInData->secondary_id == $this->selectedSecondary) {
+                        $insertRft = SewingSecondaryOut::create([
+                            'kode_numbering' => $secondaryInData->kode_numbering,
+                            'secondary_in_id' => $secondaryInData->id,
+                            'status' => 'rft',
+                            'created_by' => Auth::user()->line_id,
+                            'created_by_username' => Auth::user()->username,
+                            'created_at' => Carbon::now(),
+                            'updated_at' => Carbon::now(),
+                        ]);
 
-                        // Stored Secondary IN Data
-                        $scannedDetail = $secondaryInData->rft;
+                        if ($insertRft) {
+                            $this->emit('alert', 'success', "1 output berukuran ".$this->sizeInputText." berhasil terekam.");
 
-                        if ($scannedDetail) {
-                            $this->worksheetRft = $scannedDetail->so_det->so->actCosting->kpno;
-                            $this->styleRft = $scannedDetail->so_det->so->actCosting->styleno;
-                            $this->colorRft = $scannedDetail->so_det->color;
-                            $this->sizeRft = $scannedDetail->so_det->size;
-                            $this->kodeRft = $scannedDetail->kode_numbering;
-                            $this->lineRft = $scannedDetail->userLine->username;
+                            // Stored Secondary IN Data
+                            $scannedDetail = $secondaryInData->rft;
+
+                            if ($scannedDetail) {
+                                $this->worksheetRft = $scannedDetail->soDet->so->actCosting->kpno;
+                                $this->styleRft = $scannedDetail->soDet->so->actCosting->styleno;
+                                $this->colorRft = $scannedDetail->soDet->color;
+                                $this->sizeRft = $scannedDetail->soDet->size;
+                                $this->kodeRft = $scannedDetail->kode_numbering;
+                                $this->lineRft = $scannedDetail->userSbWip->userPassword->username;
+                            }
+
+                            // Clear
+                            $this->sizeInput = '';
+                            $this->sizeInputText = '';
+                            $this->noCutInput = '';
+                            $this->numberingInput = '';
+                        } else {
+                            $this->emit('alert', 'error', "Terjadi kesalahan. Output tidak berhasil direkam.");
                         }
-
-                        // Clear
-                        $this->sizeInput = '';
-                        $this->sizeInputText = '';
-                        $this->noCutInput = '';
-                        $this->numberingInput = '';
                     } else {
-                        $this->emit('alert', 'error', "Terjadi kesalahan. Output tidak berhasil direkam.");
+                        $this->emit('alert', 'error', "Secondary IN tidak ditemukan di ".$selectedSecondary);
                     }
+
                 } else {
                     $this->emit('alert', 'error', "Terjadi kesalahan. QR tidak ditemukan di Secondary IN.");
                 }
@@ -269,6 +285,10 @@ class Rft extends Component
         $this->sizeInputText = $scannedSizeText;
 
         $this->submitInput($scannedNumbering);
+    }
+
+    public function updateSelectedSecondary($selectedSecondary) {
+        $this->selectedSecondary = $selectedSecondary;
     }
 
     public function render(SessionManager $session)

@@ -26,7 +26,7 @@
 
         {{-- SECONDARY SEWING OUT --}}
         <div class="col-12 col-md-12 {{ $mode != "out" ? 'd-none' : ''}}" wire:poll.30000ms>
-            @livewire('secondary-out.production-panel')
+            @livewire('secondary-out.production-panel', ["selectedSecondary" => $selectedSecondary])
         </div>
 
         {{-- SECONDARY SEWING IN SUM --}}
@@ -67,10 +67,9 @@
                                     <tr>
                                         <th>Action</th>
                                         <th>Date</th>
-                                        <th>Total IN</th>
-                                        <th>Total PROCESS</th>
                                         <th>Total RFT</th>
                                         <th>Total DEFECT</th>
+                                        <th>Total REWORK</th>
                                         <th>Total REJECT</th>
                                     </tr>
                                 </thead>
@@ -114,6 +113,7 @@
                                     <label class="form-label fw-bold">REWORK</label>
                                     <input type="text" class="form-control" id="secondaryInOutDetailRework" readonly>
                                 </div>
+                                <div class="w-auto">
                                     <label class="form-label fw-bold">REJECT</label>
                                     <input type="text" class="form-control" id="secondaryInOutDetailReject" readonly>
                                 </div>
@@ -351,6 +351,8 @@
 
             defectAreaImageElement.style.display = 'block'
 
+            console.log(x && y, x, y);
+
             if (x && y) {
                 let rect = await defectAreaImageElement.getBoundingClientRect();
 
@@ -361,11 +363,19 @@
                     pointWidth = 0.03 * rect.width;
                 }
 
+                defectAreaImagePointElement.style.visibility = 'visible';
                 defectAreaImagePointElement.style.width = pointWidth + 'px';
                 defectAreaImagePointElement.style.height = defectAreaImagePointElement.style.width;
                 defectAreaImagePointElement.style.left = 'calc(' + x + '% - ' + 0.5 * pointWidth + 'px)';
                 defectAreaImagePointElement.style.top = 'calc(' + y + '% - ' + 0.5 * pointWidth + 'px)';
                 defectAreaImagePointElement.style.display = 'block';
+            } else {
+                Object.assign(defectAreaImagePointElement.style, {
+                    width: '0px',
+                    height: '0px',
+                    display: 'none',
+                    visibility: 'hidden',
+                });
             }
         });
 
@@ -433,7 +443,7 @@
             ordering: false,
             pageLength: 50,
             ajax: {
-                url: '{{ route('in-get-secondary-in-out-detail') }}',
+                url: '{{ route('out-get-secondary-in-out-detail') }}',
                 data: function (d) {
                     d.tanggal = $("#secondaryInOutDetailDate").val();
                     d.secondary = $("#selectedSecondaryModal").val();
@@ -480,17 +490,17 @@
             ],
             columnDefs: [
                 {
-                    targets: [2],
+                    targets: [1],
                     className: "disabled"
                 },
                 {
-                    targets: [3],
+                    targets: [2],
                     render: (data, type, row, meta) => {
                         return data ? data.replace("_", " ").toUpperCase() : '-';
                     }
                 },
                 {
-                    targets: [11],
+                    targets: [10],
                     render: (data, type, row, meta) => {
                         return `<button class="btn btn-dark" onclick="onShowDefectAreaImage('` + row.gambar + `', ` + row.defect_area_x + `, ` + row.defect_area_y + `)"><i class="fa fa-image"></i></button>`
                     }
@@ -508,10 +518,11 @@
                 $("#secondaryInOutDetailProcess").val(0);
                 $("#secondaryInOutDetailRft").val(0);
                 $("#secondaryInOutDetailDefect").val(0);
+                $("#secondaryInOutDetailRework").val(0);
                 $("#secondaryInOutDetailReject").val(0);
 
                 $.ajax({
-                    url: "{{ route("in-get-secondary-in-out-detail-total") }}",
+                    url: "{{ route("out-get-secondary-in-out-detail-total") }}",
                     type: "get",
                     data: {
                         tanggal: $("#secondaryInOutDetailDate").val(),
@@ -525,6 +536,7 @@
                             $("#secondaryInOutDetailProcess").val(response.secondaryProcess);
                             $("#secondaryInOutDetailRft").val(response.secondaryRft);
                             $("#secondaryInOutDetailDefect").val(response.secondaryDefect);
+                            $("#secondaryInOutDetailRework").val(response.secondaryRework);
                             $("#secondaryInOutDetailReject").val(response.secondaryReject);
                         }
                     },
@@ -559,7 +571,7 @@
             });
 
             $.ajax({
-                url: "{{ route("in-export-secondary-in-out") }}",
+                url: "{{ route("out-export-secondary-in-out") }}",
                 type: 'post',
                 data: {
                     dateFrom: $("#dateFrom").val(),
@@ -584,7 +596,7 @@
                     var blob = new Blob([res]);
                     var link = document.createElement('a');
                     link.href = window.URL.createObjectURL(blob);
-                    link.download = "Secondary In Out " + $("#selectedSecondary").val() + " " + $("#dateFrom").val() + " - " + $("#dateTo").val() + ".xlsx";
+                    link.download = "Secondary Out " + $("#selectedSecondary").val() + " " + $("#dateFrom").val() + " - " + $("#dateTo").val() + ".xlsx";
                     link.click();
                 }, error: function (jqXHR) {
                     elm.removeAttribute('disabled');

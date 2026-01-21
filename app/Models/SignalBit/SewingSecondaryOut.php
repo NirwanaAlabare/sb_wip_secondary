@@ -17,6 +17,6 @@ class SewingSecondaryOut extends Model
 
     public function secondaryIn()
     {
-        return $this->belongsTo(SewingSecondaryIns::class, 'secondary_in_id', 'id');
+        return $this->belongsTo(SewingSecondaryIn::class, 'secondary_in_id', 'id');
     }
 }

@@ -13,8 +13,9 @@ use App\Models\SignalBit\DefectType;
 use App\Models\SignalBit\DefectArea;
 use App\Models\SignalBit\Rft;
 use App\Models\SignalBit\Reject;
-use App\Models\SignalBit\SecondaryOut;
-use App\Models\SignalBit\SecondaryOutDefect;
+use App\Models\SignalBit\SewingSecondaryOutDefect;
+use App\Models\SignalBit\SewingSecondaryIn;
+use App\Models\SignalBit\SewingSecondaryOut;
 use App\Models\Nds\Numbering;
 use Carbon\Carbon;
 use Validator;
@@ -56,6 +57,8 @@ class Defect extends Component
     public $rapidDefect;
     public $rapidDefectCount;
 
+    public $selectedSecondary;
+
     protected $rules = [
         'sizeInput' => 'required',
         'noCutInput' => 'required',
@@ -82,7 +85,8 @@ class Defect extends Component
         'setDefectAreaPosition' => 'setDefectAreaPosition',
         'updateOutputDefect' => 'updateOutput',
         'setAndSubmitInputDefect' => 'setAndSubmitInput',
-        'toInputPanel' => 'resetError'
+        'toInputPanel' => 'resetError',
+        'updateSelectedSecondary' => 'updateSelectedSecondary'
     ];
 
     private function checkIfNumberingExists($numberingInput = null): bool
@@ -97,7 +101,7 @@ class Defect extends Component
         return false;
     }
 
-    public function mount(SessionManager $session)
+    public function mount(SessionManager $session, $selectedSecondary)
     {
         $this->worksheetDefect = null;
         $this->styleDefect = null;
@@ -120,6 +124,8 @@ class Defect extends Component
 
         $this->rapidDefect = [];
         $this->rapidDefectCount = 0;
+
+        $this->selectedSecondary = 0;
     }
 
     public function dehydrate()
@@ -300,20 +306,31 @@ class Defect extends Component
 
                 $this->validateOnly('sizeInput');
 
-                // Show Secondary IN Data
-                $scannedDetail = $secondaryInData->rft;
+                // Get Secondary IN Data
+                $secondaryInData = SewingSecondaryIn::where("kode_numbering", $this->numberingInput)->first();
 
-                if ($scannedDetail) {
-                    $this->worksheetDefect = $scannedDetail->so_det->so->actCosting->kpno;
-                    $this->styleDefect = $scannedDetail->so_det->so->actCosting->styleno;
-                    $this->colorDefect = $scannedDetail->so_det->color;
-                    $this->sizeDefect = $scannedDetail->so_det->size;
-                    $this->kodeDefect = $scannedDetail->kode_numbering;
-                    $this->lineDefect = $scannedDetail->userLine->username;
-                } else {
-                    $this->emit('qrInputFocus', 'defect');
+                if ($secondaryInData) {
 
-                    $this->emit('alert', 'error', "Terjadi kesalahan. QR tidak sesuai.");
+                    if ($secondaryInData->secondary_id == $this->selectedSecondary) {
+                        // Show Secondary IN Data
+                        $scannedDetail = $secondaryInData->rft;
+
+                        if ($scannedDetail) {
+                            $this->worksheetDefect = $scannedDetail->soDet->so->actCosting->kpno;
+                            $this->styleDefect = $scannedDetail->soDet->so->actCosting->styleno;
+                            $this->colorDefect = $scannedDetail->soDet->color;
+                            $this->sizeDefect = $scannedDetail->soDet->size;
+                            $this->kodeDefect = $scannedDetail->kode_numbering;
+                            $this->lineDefect = $scannedDetail->userSbWip->userPassword->username;
+                        } else {
+                            $this->emit('qrInputFocus', 'defect');
+
+                            $this->emit('alert', 'error', "Terjadi kesalahan. QR tidak sesuai.");
+                        }
+                    } else {
+                        $this->emit('alert', 'error', "Secondary IN tidak ditemukan di ".$this->selectedSecondary);
+                    }
+
                 }
             }
         }
@@ -338,49 +355,56 @@ class Defect extends Component
 
                 if ($secondaryInData) {
 
-                    // Create Secondary Out Defect
-                    $insertDefect = SecondaryOut::create([
-                        'kode_numbering' => $secondaryInData->kode_numbering,
-                        'secondary_in_id' => $secondaryInData->id,
-                        'status' => 'defect',
-                        'created_at' => Carbon::now(),
-                        'updated_at' => Carbon::now(),
-                        'created_by' => Auth::user()->line_id,
-                        'created_by_username' => Auth::user()->username
-                    ]);
+                    if ($secondaryInData->secondary_id == $this->selectedSecondary) {
 
-                    if ($insertDefect) {
-                        // Create Secondary Out Defect Detail
-                        $insertDefectDetail = SecondaryOutDefect::create([
-                            'secondary_out_id' => $insertDefect->id,
-                            'defect_type_id' => $validatedData['defectType'],
-                            'defect_area_id' => $validatedData['defectArea'],
-                            'defect_area_x' => $validatedData['defectAreaPositionX'],
-                            'defect_area_y' => $validatedData['defectAreaPositionY'],
-                            'created_by' => Auth::user()->line_id,
-                            'created_by_username' => Auth::user()->username,
+                        // Create Secondary Out Defect
+                        $insertDefect = SewingSecondaryOut::create([
+                            'kode_numbering' => $secondaryInData->kode_numbering,
+                            'secondary_in_id' => $secondaryInData->id,
                             'status' => 'defect',
+                            'created_at' => Carbon::now(),
+                            'updated_at' => Carbon::now(),
+                            'created_by' => Auth::user()->line_id,
+                            'created_by_username' => Auth::user()->username
                         ]);
 
-                        $type = DefectType::select('defect_type')->find($this->defectType);
-                        $area = DefectArea::select('defect_area')->find($this->defectArea);
-                        $getSize = DB::table('so_det')
-                            ->select('id', 'size')
-                            ->where('id', $this->sizeInput)
-                            ->first();
+                        if ($insertDefect) {
+                            // Create Secondary Out Defect Detail
+                            $insertDefectDetail = SewingSecondaryOutDefect::create([
+                                'kode_numbering' => $secondaryInData->kode_numbering,
+                                'secondary_out_id' => $insertDefect->id,
+                                'defect_type_id' => $validatedData['defectType'],
+                                'defect_area_id' => $validatedData['defectArea'],
+                                'defect_area_x' => $validatedData['defectAreaPositionX'],
+                                'defect_area_y' => $validatedData['defectAreaPositionY'],
+                                'created_by' => Auth::user()->line_id,
+                                'created_by_username' => Auth::user()->username,
+                                'status' => 'defect',
+                            ]);
 
-                        $this->emit('alert', 'success', "1 output DEFECT berukuran ".$getSize->size." dengan jenis defect : ".$type->defect_type." dan area defect : ".$area->defect_area." berhasil terekam.");
-                        $this->emit('hideModal', 'defect', 'regular');
+                            $type = DefectType::select('defect_type')->find($this->defectType);
+                            $area = DefectArea::select('defect_area')->find($this->defectArea);
+                            $getSize = DB::table('so_det')
+                                ->select('id', 'size')
+                                ->where('id', $this->sizeInput)
+                                ->first();
 
-                        $this->sizeInput = '';
-                        $this->sizeInputText = '';
-                        $this->noCutInput = '';
-                        $this->numberingInput = '';
+                            $this->emit('alert', 'success', "1 output DEFECT berukuran ".$getSize->size." dengan jenis defect : ".$type->defect_type." dan area defect : ".$area->defect_area." berhasil terekam.");
+                            $this->emit('hideModal', 'defect', 'regular');
+
+                            $this->sizeInput = '';
+                            $this->sizeInputText = '';
+                            $this->noCutInput = '';
+                            $this->numberingInput = '';
+                        } else {
+                            $this->emit('alert', 'error', "Terjadi kesalahan. Output tidak berhasil direkam.");
+                        }
+
+                        $this->emit('qrInputFocus', 'defect');
+
                     } else {
-                        $this->emit('alert', 'error', "Terjadi kesalahan. Output tidak berhasil direkam.");
+                        $this->emit('alert', 'error', "Secondary IN tidak ditemukan di ".$this->selectedSecondary);
                     }
-
-                    $this->emit('qrInputFocus', 'defect');
                 }
             } else {
                 $this->emit('alert', 'error', "Terjadi kesalahan. QR tidak sesuai.");
@@ -508,7 +532,7 @@ class Defect extends Component
 
                 if ($secondaryInData && ((DB::connection("mysql_sb")->table("output_secondary_out")->where('kode_numbering', $this->rapidDefect[$i]['numberingInput'])->count() < 1))) {
 
-                    $createSecondaryOut = SecondaryOut::create([
+                    $createSecondaryOut = SewingSecondaryOut::create([
                         'kode_numbering' => $this->rapidDefect[$i]['numberingInput'],
                         'secondary_in_id' => $secondaryInData->id,
                         'status' => 'defect',
@@ -517,6 +541,7 @@ class Defect extends Component
                     ]);
 
                     array_push($rapidDefectFiltered, [
+                        'kode_numbering' => $this->rapidDefect[$i]['numberingInput'],
                         'secondary_out_id' => $createSecondaryOut->id,
                         'defect_type_id' => $this->defectType,
                         'defect_area_id' => $this->defectArea,
@@ -534,7 +559,7 @@ class Defect extends Component
             }
         }
 
-        $rapidDefectInsert = SecondaryOutDefect::insert($rapidDefectFiltered);
+        $rapidDefectInsert = SewingSecondaryOutDefect::insert($rapidDefectFiltered);
 
         if ($success > 0) {
             $this->emit('alert', 'success', $success." output berhasil terekam. ");
@@ -550,6 +575,10 @@ class Defect extends Component
 
         $this->rapidDefect = [];
         $this->rapidDefectCount = 0;
+    }
+
+    public function updateSelectedSecondary($selectedSecondary) {
+        $this->selectedSecondary = $selectedSecondary;
     }
 
     public function render(SessionManager $session)
@@ -571,11 +600,11 @@ class Defect extends Component
         $this->productTypes = ProductType::orderBy('product_type')->get();
 
         // Defect types
-        $this->defectTypes = DefectType::leftJoin(DB::raw("(select defect_type_id, count(id) total_defect from output_defects where updated_at between '".date("Y-m-d", strtotime(date("Y-m-d").' -10 days'))." 00:00:00' and '".date("Y-m-d")." 23:59:59' group by defect_type_id) as defects"), "defects.defect_type_id", "=", "output_defect_types.id")->whereRaw("(hidden IS NULL OR hidden != 'Y')")->orderBy('defect_type')->get();
+        $this->defectTypes = DefectType::whereRaw("(hidden IS NULL OR hidden != 'Y')")->orderBy('defect_type')->get();
 
         // Defect areas
-        $this->defectAreas = DefectArea::leftJoin(DB::raw("(select defect_area_id, count(id) total_defect from output_defects where updated_at between '".date("Y-m-d", strtotime(date("Y-m-d").' -10 days'))." 00:00:00' and '".date("Y-m-d")." 23:59:59' group by defect_area_id) as defects"), "defects.defect_area_id", "=", "output_defect_areas.id")->whereRaw("(hidden IS NULL OR hidden != 'Y')")->orderBy('defect_area')->get();
+        $this->defectAreas = DefectArea::whereRaw("(hidden IS NULL OR hidden != 'Y')")->orderBy('defect_area')->get();
 
-        return view('livewire.secondary-out.defect');
+        return view('livewire.secondary-out.defect', ["defectTypesOpt" => $this->defectTypes, "defectAreasOpt" => $this->defectAreas]);
     }
 }

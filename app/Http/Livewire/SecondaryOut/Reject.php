@@ -12,6 +12,10 @@ use App\Models\SignalBit\Defect;
 use App\Models\SignalBit\DefectType;
 use App\Models\SignalBit\DefectArea;
 use App\Models\SignalBit\MasterPlan;
+use App\Models\SignalBit\SewingSecondaryIn;
+use App\Models\SignalBit\SewingSecondaryOut;
+use App\Models\SignalBit\SewingSecondaryOutDefect;
+use App\Models\SignalBit\SewingSecondaryOutReject;
 use App\Models\Nds\Numbering;
 use Carbon\Carbon;
 use Validator;
@@ -47,6 +51,8 @@ class Reject extends Component
     public $rejectAreaPositionX;
     public $rejectAreaPositionY;
 
+    public $selectedSecondary;
+
     protected $rules = [
         'sizeInput' => 'required',
         'noCutInput' => 'required',
@@ -77,12 +83,13 @@ class Reject extends Component
         'hideDefectAreaImageClear' => 'hideDefectAreaImage',
 
         'setRejectAreaPosition' => 'setRejectAreaPosition',
-        'clearInput' => 'clearInput'
+        'clearInput' => 'clearInput',
+        'updateSelectedSecondary' => 'updateSelectedSecondary',
     ];
 
     private function checkIfNumberingExists($numberingInput = null): bool
     {
-        $currentData = DB::table('output_secondary_out')->where('kode_numbering', ($numberingInput ?? $this->numberingInput))->first();
+        $currentData = DB::table('output_secondary_out')->where('kode_numbering', ($numberingInput ?? $this->numberingInput))->where('status', '!=', 'defect')->first();
         if ($currentData) {
             $this->addError('numberingInput', 'Kode QR sudah discan di '.strtoupper($currentData->status).'.');
 
@@ -92,7 +99,7 @@ class Reject extends Component
         return false;
     }
 
-    public function mount(SessionManager $session)
+    public function mount(SessionManager $session, $selectedSecondary)
     {
         $this->sizeInput = null;
 
@@ -110,6 +117,8 @@ class Reject extends Component
         $this->sizeReject = null;
         $this->kodeReject = null;
         $this->lineReject = null;
+
+        $this->selectedSecondary = $selectedSecondary;
     }
 
     public function dehydrate()
@@ -193,7 +202,7 @@ class Reject extends Component
         }
 
         // Get Secondary OUT Defect Detail
-        $scannedDefectData = SecondaryOutDefect::where("kode_numbering", $numberingInput)->first();
+        $scannedDefectData = SewingSecondaryOutDefect::where("kode_numbering", $numberingInput)->first();
 
         // When it is Defect
         if ($scannedDefectData) {
@@ -253,15 +262,19 @@ class Reject extends Component
 
                     $this->validateOnly('sizeInput');
 
-                    // Get Detail
-                    $scannedDetail = $secondaryInData->rft;
-                    if ($scannedDetail) {
-                        $this->worksheetReject = $scannedDetail->so_det->so->actCosting->kpno;
-                        $this->styleReject = $scannedDetail->so_det->so->actCosting->styleno;
-                        $this->colorReject = $scannedDetail->so_det->color;
-                        $this->sizeReject = $scannedDetail->so_det->size;
-                        $this->kodeReject = $scannedDetail->kode_numbering;
-                        $this->lineReject = $scannedDetail->userLine->username;
+                    if ($secondaryInData->secondary_id == $this->selectedSecondary) {
+                        // Get Detail
+                        $scannedDetail = $secondaryInData->rft;
+                        if ($scannedDetail) {
+                            $this->worksheetReject = $scannedDetail->soDet->so->actCosting->kpno;
+                            $this->styleReject = $scannedDetail->soDet->so->actCosting->styleno;
+                            $this->colorReject = $scannedDetail->soDet->color;
+                            $this->sizeReject = $scannedDetail->soDet->size;
+                            $this->kodeReject = $scannedDetail->kode_numbering;
+                            $this->lineReject = $scannedDetail->userSbWip->userPassword->username;
+                        }
+                    } else {
+                        $this->emit('alert', 'error', "Secondary IN tidak ditemukan di ".$this->selectedSecondary);
                     }
                 }
             }
@@ -305,7 +318,7 @@ class Reject extends Component
         $continue = false;
 
         // Get Secondary OUT Defect Detail
-        $scannedDefectData = SecondaryOutDefect::where("kode_numbering", $numberingInput)->first();
+        $scannedDefectData = SewingSecondaryOutDefect::where("kode_numbering", $this->numberingInput)->first();
 
         // When it is Defect
         if ($scannedDefectData) {
@@ -329,7 +342,7 @@ class Reject extends Component
         // When it's not
         else {
             // Get Secondary IN Data
-            $secondaryInData = DB::connection('mysql_sb')->table('output_secondary_in')->where("kode_numbering", $numberingInput)->first();
+            $secondaryInData = DB::connection('mysql_sb')->table('output_secondary_in')->where("kode_numbering", $this->numberingInput)->first();
 
             if ($secondaryInData) {
                 $continue = true;
@@ -347,20 +360,20 @@ class Reject extends Component
             $secondaryOutData = null;
             if ($scannedDefectData) {
                 // Update Secondary OUT Defect
-                SecondaryOut::where("kode_numbering", $this->numberingInput)->
+                SewingSecondaryOut::where("kode_numbering", $this->numberingInput)->
                     update([
                         'status' => 'reject'
                     ]);
 
                 // Get Secondary OUT Defect
-                $secondaryOutData = SecondaryOut::where("kode_numbering", $this->numberingInput);
+                $secondaryOutData = SewingSecondaryOut::where("kode_numbering", $this->numberingInput)->first();
             } else {
                 // Get Secondary IN
                 $secondaryInData = DB::connection('mysql_sb')->table('output_secondary_in')->where("kode_numbering", $this->numberingInput)->first();
 
                 if ($secondaryInData) {
                     // Create Secondary OUT Reject
-                    $secondaryOutData = SecondaryOut::create([
+                    $secondaryOutData = SewingSecondaryOut::create([
                         'kode_numbering' => $secondaryInData->kode_numbering,
                         'secondary_in_id' => $secondaryInData->id,
                         'status' => 'reject',
@@ -376,8 +389,8 @@ class Reject extends Component
 
             if ($secondaryOutData) {
                 // Create Secondary OUT Reject Detail
-                $insertReject = SecondaryOutReject::create([
-                    "secondary_out_id" => $secondaryOut ? $secondaryOut->id : null,
+                $insertReject = SewingSecondaryOutReject::create([
+                    "secondary_out_id" => $secondaryOutData ? $secondaryOutData->id : null,
                     'kode_numbering' => $this->numberingInput,
                     'defect_type_id' => $this->rejectType,
                     'defect_area_id' => $this->rejectArea,
@@ -478,20 +491,20 @@ class Reject extends Component
                     $secondaryOutData = null;
                     if ($scannedDefectData) {
                         // Update Secondary OUT
-                        SecondaryOut::where("kode_numbering", $this->rapidReject[$i]['numberingInput'])->
+                        SewingSecondaryOut::where("kode_numbering", $this->rapidReject[$i]['numberingInput'])->
                             update([
                                 'status' => 'reject'
                             ]);
 
                         // Get Secondary OUT
-                        $secondaryOutData = SecondaryOut::where("kode_numbering", $this->rapidReject[$i]['numberingInput']);
+                        $secondaryOutData = SewingSecondaryOut::where("kode_numbering", $this->rapidReject[$i]['numberingInput']);
                     } else {
                         // Get Secondary IN
                         $secondaryInData = DB::connection('mysql_sb')->table('output_secondary_in')->where("kode_numbering")->first();
 
                         if ($secondaryInData) {
                             // Create Secondary OUT
-                            $secondaryOutData = SecondaryOut::create([
+                            $secondaryOutData = SewingSecondaryOut::create([
                                 'kode_numbering' => $secondaryInData->kode_numbering,
                                 'secondary_in_id' => $secondaryInData->id,
                                 'status' => 'reject',
@@ -505,7 +518,7 @@ class Reject extends Component
 
                     if ($secondaryOutData) {
                         array_push($rapidRejectFiltered, [
-                            "secondary_out_id" => $secondaryOut->id,
+                            "secondary_out_id" => $secondaryOutData->id,
                             'kode_numbering' => $this->rapidReject[$i]['numberingInput'],
                             'defect_type_id' => $this->rejectType,
                             'defect_area_id' => $this->rejectArea,
@@ -568,6 +581,10 @@ class Reject extends Component
         $this->defectImage = null;
         $this->defectPositionX = null;
         $this->defectPositionY = null;
+    }
+
+    public function updateSelectedSecondary($selectedSecondary) {
+        $this->selectedSecondary = $selectedSecondary;
     }
 
     public function render(SessionManager $session)

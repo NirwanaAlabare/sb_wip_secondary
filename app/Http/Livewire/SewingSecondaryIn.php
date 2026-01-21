@@ -172,7 +172,7 @@ class SewingSecondaryIn extends Component
                 SUM(CASE WHEN output_secondary_out.status = 'rft' OR output_secondary_out.status = 'rework' THEN 1 ELSE 0 END) total_rft,
                 SUM(CASE WHEN output_secondary_out.status = 'defect' THEN 1 ELSE 0 END) total_defect,
                 SUM(CASE WHEN output_secondary_out.status = 'reject' THEN 1 ELSE 0 END) total_reject,
-                SUM(CASE WHEN output_secondary_out.id IS NOT NULL THEN 1 ELSE 0 END) total_process
+                SUM(CASE WHEN output_secondary_out.id IS NULL THEN 1 ELSE 0 END) total_process
             ")->
             leftJoin("output_rfts", "output_rfts.id", "=", "output_secondary_in.rft_id")->
             leftJoin("output_secondary_master", "output_secondary_master.id", "=", "output_secondary_in.secondary_id")->

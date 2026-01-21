@@ -20,7 +20,7 @@
                         </div>
                     @enderror
                     {{-- <div id="rft-reader" width="600px"></div> --}}
-                    <input type="text" class="qty-input h-100" id="scannedItemRft" name="scannedItemRft">
+                    <input type="text" class="qty-input h-75" id="scannedItemRft" name="scannedItemRft">
                 </div>
             </div>
         </div>
@@ -227,6 +227,8 @@
         Livewire.on('qrInputFocus', async (type) => {
             if (type == 'rft') {
                 scannedItemRftInput.focus();
+
+                rftSecondaryOutListReload();
             }
         });
 
@@ -262,6 +264,7 @@
                 data: function (d) {
                     d.date = $("#rft-log-date").val();
                     d.status = "rft";
+                    d.selectedSecondary = $("#selectedSecondary").val();
                 }
             },
             columns: [
@@ -297,25 +300,19 @@
                 },
             ],
             columnDefs: [
-                // {
-                //     targets: [0],
-                //     className: "text-nowrap text-center align-middle",
-                //     render: (data, type, row, meta) => {
-                //         return meta.row+1;
-                //     }
-                // },
                 {
                     targets: "_all",
                     className: "text-nowrap text-center align-middle"
                 },
             ],
-            rowCallback: function (row, data, iDisplayIndex) {
-                var info = this.api().page.info();
-                var page = info.page;
-                var length = info.length;
-                var index = (page * length + (iDisplayIndex + 1));
-                $('td:eq(0)', row).html(index); // Assuming the first column is for the index
-            }
         });
+
+        function rftSecondaryOutListReload() {
+            $("#rft-secondary-out-list-table").DataTable().ajax.reload();
+        }
+
+        Livewire.on("updateSelectedSecondary", function () {
+            rftSecondaryOutListReload();
+        })
     </script>
 @endpush

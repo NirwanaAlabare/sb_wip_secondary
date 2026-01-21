@@ -19,6 +19,8 @@ use DB;
 
 class ProductionPanel extends Component
 {
+    public $date;
+
     // Data
     public $outputRft;
     public $outputDefect;
@@ -38,6 +40,13 @@ class ProductionPanel extends Component
     public $scannedSizeInput;
     public $scannedSizeInputText;
 
+    // Selected Secondary
+    public $selectedSecondary;
+    public $selectedSecondaryText;
+
+    public $inWip;
+    public $outDefect;
+
     // Event listeners
     protected $listeners = [
         'toProductionPanel' => 'toProductionPanel',
@@ -49,9 +58,10 @@ class ProductionPanel extends Component
         'countDefect' => 'countDefect',
         'countReject' => 'countReject',
         'countRework' => 'countRework',
+        'updateSelectedSecondary' => 'updateSelectedSecondary',
     ];
 
-    public function mount()
+    public function mount($selectedSecondary)
     {
         $this->panels = true;
         $this->rft = false;
@@ -63,6 +73,18 @@ class ProductionPanel extends Component
         $this->outputReject = 0;
         $this->outputRework = 0;
         $this->outputFiltered = 0;
+
+        // Secondary
+        $this->selectedSecondary = $selectedSecondary;
+        $selectedSecondaryData = DB::table("output_secondary_master")->where("id", $this->selectedSecondary)->first();
+        if ($this->selectedSecondary) {
+            $this->selectedSecondaryText = $selectedSecondaryData->secondary;
+        }
+
+        $this->inWip = 0;
+        $this->outDefect = 0;
+
+        $this->date = date("Y-m-d");
     }
 
     public function toRft()
@@ -139,15 +161,28 @@ class ProductionPanel extends Component
         }
     }
 
+    public function updateSelectedSecondary($selectedSecondary) {
+        $this->selectedSecondary = $selectedSecondary;
+
+        $selectedSecondaryData = DB::table("output_secondary_master")->where("id", $this->selectedSecondary)->first();
+
+        if ($selectedSecondaryData) {
+            $this->selectedSecondaryText = $selectedSecondaryData->secondary;
+        }
+    }
+
     public function render(SessionManager $session)
     {
         // Get total output
-        $data = DB::connection('mysql_sb')->table('output_secondary_out')->get();
+        $data = DB::connection('mysql_sb')->table('output_secondary_out')->selectRaw('output_secondary_out.*, output_secondary_in.secondary_id')->leftJoin('output_secondary_in', 'output_secondary_in.id', '=', 'output_secondary_out.secondary_in_id')->whereRaw("COALESCE(output_secondary_out.updated_at, output_secondary_out.created_at) between '".$this->date." 00:00:00' and '".$this->date." 23:59:59'")->get();
 
-        $this->outputRft = $data->where('status', 'rft')->count();
-        $this->outputDefect = $data->where('status', 'defect')->count();
-        $this->outputReject = $data->where('status', 'reject')->count();
-        $this->outputRework = $data->where('status', 'rework')->count();
+        $this->inWip = DB::table("output_secondary_in")->leftJoin("output_secondary_out", "output_secondary_out.secondary_in_id", "=", "output_secondary_in.id")->whereNull("output_secondary_out.id")->where("secondary_id", $this->selectedSecondary)->count();
+        $this->outDefect = DB::table("output_secondary_out")->leftJoin("output_secondary_in", "output_secondary_in.id", "=", "output_secondary_out.secondary_in_id")->where("output_secondary_out.status", "defect")->where("secondary_id", $this->selectedSecondary)->count();
+
+        $this->outputRft = $data->where('status', 'rft')->where('secondary_id', $this->selectedSecondary)->count();
+        $this->outputDefect = $data->where('status', 'defect')->where('secondary_id', $this->selectedSecondary)->count();
+        $this->outputReject = $data->where('status', 'reject')->where('secondary_id', $this->selectedSecondary)->count();
+        $this->outputRework = $data->where('status', 'rework')->where('secondary_id', $this->selectedSecondary)->count();
 
         return view('livewire.secondary-out.production-panel');
     }
