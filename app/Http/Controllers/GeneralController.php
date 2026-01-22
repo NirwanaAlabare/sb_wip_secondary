@@ -77,7 +77,7 @@ class GeneralController extends Controller
     }
 
     public function getColor(Request $request) {
-        $colors = DB::connection("mysql_sb")->select("select color from so_det left join so on so.id = so_det.id_so left join act_costing on act_costing.id = so.id_cost where act_costing.id = '" . $request->act_costing_id . "' group by color");
+        $colors = DB::connection("mysql_sb")->select("select color from so_det left join so on so.id = so_det.id_so left join act_costing on act_costing.id = so.id_cost where act_costing.id = '" . $request->worksheet . "' group by color");
 
         return $colors ? $colors : null;
     }
@@ -94,7 +94,7 @@ class GeneralController extends Controller
             leftJoin("so", "so.id", "=", "so_det.id_so")->
             leftJoin("act_costing", "act_costing.id", "=", "so.id_cost")->
             leftJoin("master_size_new", "master_size_new.size", "=", "so_det.size")->
-            where("act_costing.id", $request->act_costing_id)->
+            where("act_costing.id", $request->worksheet)->
             where("so_det.color", $request->color)->
             groupBy("so_det.id")->
             orderBy("master_size_new.urutan")->
@@ -103,17 +103,27 @@ class GeneralController extends Controller
         return $sizes ? $sizes : null;
     }
 
-    public function getOutputSewing(Request $request) {
+    public function getSewingQty(Request $request) {
         $outputs = DB::connection("mysql_sb")->table("output_rfts")->selectRaw("
                 COUNT(output_rfts.id) total_rft
             ")->
             leftJoin("so_det", "so_det.id", "=", "output_rfts.so_det_id")->
             leftJoin("so", "so.id", "=", "so_det.id_so")->
             leftJoin("act_costing", "act_costing.id", "=", "so.id_cost")->
-            where("act_costing.id", $request->act_costing_id)->
-            where("so_det.color", $request->color)->
-            where("so_det.size", $request->size)->
-            get();
+            leftJoin("user_sb_wip", "user_sb_wip.id", "=", "output_rfts.created_by")->
+            leftJoin("userpassword", "userpassword.line_id", "=", "user_sb_wip.line_id")->
+            leftJoin("output_secondary_in", "output_secondary_in.rft_id", "=", "output_rfts.id")->
+            whereRaw("
+                output_secondary_in.id is null and
+                output_rfts.kode_numbering is null and
+                act_costing.id = '".$request->worksheet."' and
+                so_det.color = '".$request->color."' and
+                so_det.size = '".$request->size."'
+                ".($request->sewingLine ? " and userpassword.username = '".$request->sewingLine."' " : "")."
+            ")->
+            first();
+
+        return $outputs ? $outputs->total_rft : 0;
     }
 
     public function getSecondaryMaster(Request $request) {

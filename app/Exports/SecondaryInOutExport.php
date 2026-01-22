@@ -71,6 +71,7 @@ class SecondaryInOutExport implements FromView, ShouldAutoSize
                 (
                     output_secondary_in.id IS NOT NULL AND
                     output_rfts.id IS NOT NULL AND
+                    output_rfts.kode_numbering IS NULL AND
                     output_secondary_master.id = '".$this->selectedSecondary."'
                 )
             ")->

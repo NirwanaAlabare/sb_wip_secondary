@@ -39,12 +39,12 @@
                     </div>
                 </div>
                 <div class="card-body">
-                    <div class="row">
+                    <div class="row mb-3">
                         <div class="col-md-12">
                             <div class="d-flex justify-content-end">
                                 <div>
                                     <label class="form-label fw-bold w-auto">Total Qty IN</label>
-                                    <input type="number" class="form-control" readonly>
+                                    <input type="number" class="form-control" id="total-secondary-in-1" readonly>
                                 </div>
                             </div>
                         </div>
@@ -86,21 +86,21 @@
                                 </div>
                                 <div class="col-md-3">
                                     <label class="form-label fw-bold">Sewing Qty</label>
-                                    <input type="number" class="form-control" id="sewing_qty" name="sewing_qty" readonly>
+                                    <input type="number" class="form-control" id="sewingQty" name="sewingQty" readonly>
                                 </div>
                                 <div class="col-md-3">
                                     <label class="form-label fw-bold">Input Qty</label>
-                                    <input type="number" class="form-control" id="secondary_in_qty" name="secondary_in_qty">
+                                    <input type="number" class="form-control" id="secondaryInQty" name="secondaryInQty">
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <div class="table-responsive mt-3">
-                        <table class="table w-100" id="secondary-in-list-table" wire:ignore>
+                    <button class="btn btn-defect btn-block w-100" onclick="submitSecondaryIn()">SIMPAN</button>
+                    <div class="table-responsive mt-3" wire:ignore>
+                        <table class="table w-100" id="secondary-in-list-table">
                             <thead>
                                 <tr>
                                     <th>No. </th>
-                                    <th>Kode QR</th>
                                     <th>Line</th>
                                     <th>Worksheet</th>
                                     <th>Style</th>
@@ -109,12 +109,10 @@
                                     <th>Secondary</th>
                                     <th>Created By</th>
                                     <th>Created At</th>
+                                    <th>Total</th>
                                 </tr>
                                 <tr class="text-center align-middle">
                                     <td>
-                                    </td>
-                                    <td>
-                                        <input type="text" class="form-control form-control-sm" id="secondaryInFilterKode" onkeyup="reloadSecondaryInListTable()">
                                     </td>
                                     <td>
                                         <input type="text" class="form-control form-control-sm" id="secondaryInFilterLine" onkeyup="reloadSecondaryInListTable()">
@@ -140,6 +138,7 @@
                                     <td>
                                         <input type="text" class="form-control form-control-sm" id="secondaryInFilterWaktu" onkeyup="reloadSecondaryInListTable()">
                                     </td>
+                                    <td></td>
                                 </tr>
                             </thead>
                             <tbody>
@@ -262,7 +261,6 @@
                                         <tr>
                                             <th>Time IN</th>
                                             <th>Time OUT</th>
-                                            <th>QR</th>
                                             <th>Line</th>
                                             <th>No. WS</th>
                                             <th>Style</th>
@@ -302,18 +300,6 @@
 </div>
 
 @push('scripts')
-    <!-- DataTables -->
-    <link rel="stylesheet" href="{{ asset('datatables/datatables-bs4/css/dataTables.bootstrap4.min.css') }}">
-    <link rel="stylesheet" href="{{ asset('datatables/datatables-responsive/css/responsive.bootstrap4.min.css') }}">
-    <link rel="stylesheet" href="{{ asset('datatables/datatables-buttons/css/buttons.bootstrap4.min.css') }}">
-    <link rel="stylesheet" href="{{ asset('datatables/datatables-rowgroup/css/rowGroup.bootstrap4.min.css') }}">
-
-    {{-- DataTables --}}
-    <script src="{{ asset('datatables/datatables/jquery.dataTables.min.js') }}"></script>
-    <script src="{{ asset('datatables/datatables-bs4/js/dataTables.bootstrap4.min.js') }}"></script>
-    <script src="{{ asset('datatables/datatables-responsive/js/dataTables.responsive.min.js') }}"></script>
-    <script src="{{ asset('datatables/datatables-responsive/js/responsive.bootstrap4.min.js') }}"></script>
-
     <script>
         document.addEventListener("DOMContentLoaded", async function () {
             $('.select2').select2({
@@ -379,6 +365,8 @@
         });
 
         function updateColorList() {
+            updateSewingQty();
+
             let selectElement = document.getElementById("color");
 
             if (selectElement) {
@@ -388,7 +376,7 @@
                     type: "get",
                     url: "{{ route('get-color') }}",
                     data: {
-                        "act_costing_id": $("#worksheet").val()
+                        "worksheet": $("#worksheet").val()
                     },
                     dataType: "json",
                     success: function (response)  {
@@ -419,6 +407,8 @@
         }
 
         function updateSizeList() {
+            updateSewingQty();
+
             let selectElement = document.getElementById("size");
 
             if (selectElement) {
@@ -428,7 +418,7 @@
                     type: "get",
                     url: "{{ route('get-size') }}",
                     data: {
-                        "act_costing_id": $("#worksheet").val(),
+                        "worksheet": $("#worksheet").val(),
                         "color": $("#color").val(),
                     },
                     dataType: "json",
@@ -445,7 +435,7 @@
 
                                 response.forEach(item => {
                                     let option = document.createElement("option");
-                                    option.value = item.so_det_id;
+                                    option.value = item.size;
                                     option.text = item.size;
 
                                     selectElement.appendChild(option);
@@ -459,6 +449,26 @@
             }
         }
 
+        function updateSewingQty() {
+            $.ajax({
+                type: "get",
+                url: "{{ route('get-sewing-qty') }}",
+                data: {
+                    "worksheet": $("#worksheet").val(),
+                    "color": $("#color").val(),
+                    "size": $("#size").val(),
+                    "sewingLine" : $("#sewingLine").val(),
+                },
+                success: function (response) {
+                    console.log(response);
+                    $("#sewingQty").val(response);
+                },
+                error: function (jqXHR) {
+                    console.error(jqXHR);
+                }
+            });
+        }
+
         $("#worksheet").on("change", function (event) {
             let selectedOption = this.options[this.selectedIndex];
 
@@ -468,9 +478,15 @@
         });
 
         $("#color").on("change", function (event) {
-            let selectedOption = this.options[this.selectedIndex];
-
             updateSizeList();
+        });
+
+        $("#size").on("change", function (event) {
+            updateSewingQty();
+        });
+
+        $("#sewingLine").on("change", function (event) {
+            updateSewingQty();
         });
 
         // Secondary In List
@@ -503,9 +519,6 @@
                     data: 'id',
                 },
                 {
-                    data: 'kode_numbering',
-                },
-                {
                     data: 'sewing_line',
                 },
                 {
@@ -528,6 +541,9 @@
                 },
                 {
                     data: 'secondary_in_time',
+                },
+                {
+                    data: 'secondary_in_qty',
                 },
             ],
             columnDefs: [
@@ -552,53 +568,94 @@
             }
         });
 
+        function updateSecondaryInListTotal() {
+            $.ajax({
+                type: "get",
+                url: "{{ route('in-get-secondary-in-list-total') }}",
+                data: {
+                    selectedSecondary : $("#selectedSecondary").val(),
+                    secondaryInSearch : $("#secondary-in-search").val(),
+                    secondaryInLine : $("#secondary-in-line").val(),
+                    secondaryInFilterKode : $("#secondaryInFilterKode").val(),
+                    secondaryInFilterWaktu : $("#secondaryInFilterWaktu").val(),
+                    secondaryInFilterLine : $("#secondaryInFilterLine").val(),
+                    secondaryInFilterWS : $("#secondaryInFilterWS").val(),
+                    secondaryInFilterStyle : $("#secondaryInFilterStyle").val(),
+                    secondaryInFilterColor : $("#secondaryInFilterColor").val(),
+                    secondaryInFilterSize : $("#secondaryInFilterSize").val(),
+                    secondaryInFilterSecondary : $("#secondaryInFilterSecondary").val(),
+                },
+                dataType: "json",
+                success: function (response) {
+                    if (response) {
+                        $("#total-secondary-in b").text(response);
+                        $("#total-secondary-in-1").val(response);
+                    }
+                },
+                error: function (jqXHR) {
+                    console.log(jqXHR)
+                }
+            });
+        }
+
         $("#secondary-in-list-table").DataTable().on('draw.dt', function (e, settings, json, xhr) {
-            var info = $("#secondary-in-list-table").DataTable().page.info();
-            var totalEntries = info.recordsDisplay;
-            $('#total-secondary-in b').text(totalEntries);
+            // var info = $("#secondary-in-list-table").DataTable().page.info();
+            // var totalEntries = info.recordsDisplay;
+            // $('#total-secondary-in b').text(totalEntries);
+            // $('#total-secondary-in-1').val(totalEntries);
+
+            updateSecondaryInListTotal();
         });
 
         function reloadSecondaryInListTable() {
             $("#secondary-in-list-table").DataTable().ajax.reload(() => {
-                var info = $("#secondary-in-list-table").DataTable().page.info();
-                var totalEntries = info.recordsDisplay;
-                $('#total-secondary-in b').text(totalEntries);
+                // var info = $("#secondary-in-list-table").DataTable().page.info();
+                // var totalEntries = info.recordsDisplay;
+                // $('#total-secondary-in b').text(totalEntries);
+                // $('#total-secondary-in-1').val(totalEntries);
+
+                updateSecondaryInListTotal();
             });
         }
 
         function submitSecondaryIn() {
             document.getElementById("loading").classList.remove("d-none");
 
-            $("#kodeNumbering").val("");
-            $("#sewingLine").val("");
-            $("#worksheet").val("");
-            $("#style").val("");
-            $("#color").val("");
-            $("#size").val("");
-
             $.ajax({
                 type: "post",
                 url: "{{ route('in-submit-secondary-in') }}",
                 data: {
                     selectedSecondary: $("#selectedSecondary").val(),
+                    sewingLine : $("#sewingLine").val(),
+                    worksheet : $("#worksheet").val(),
+                    style : $("#style").val(),
+                    color : $("#color").val(),
+                    size : $("#size").val(),
+                    qty : $("#secondaryInQty").val(),
                 },
                 dataType: "json",
                 success: function (response) {
                     document.getElementById("loading").classList.add("d-none");
 
                     if (response) {
-                        showNotification(response.status, response.message);
+                        // Success
+                        if (response.success > 0) {
+                            showNotification("success", response.success+" output berhasil disimpan.");
+                        }
 
-                        if (response.data) {
-                            $("#kodeNumbering").val(response.data.kode_numbering);
-                            $("#sewingLine").val(response.data.sewing_line);
-                            $("#worksheet").val(response.data.ws);
-                            $("#style").val(response.data.style);
-                            $("#color").val(response.data.color);
-                            $("#size").val(response.data.size);
+                        // fail
+                        if (response.fail > 0) {
+                            showNotification("error", response.fail+" output gagal disimpan/tidak ditemukan.");
+                        }
+
+                        // exist
+                        if (response.exist > 0) {
+                            showNotification("warning", response.exist+" output sudah ada .");
                         }
 
                         reloadSecondaryInListTable();
+
+                        updateSewingQty();
                     }
                 },
                 error: function (jqXHR) {
@@ -752,9 +809,6 @@
                     data: 'time_out',
                 },
                 {
-                    data: 'kode_numbering',
-                },
-                {
                     data: 'sewing_line',
                 },
                 {
@@ -791,16 +845,12 @@
             columnDefs: [
                 {
                     targets: [2],
-                    className: "disabled"
-                },
-                {
-                    targets: [3],
                     render: (data, type, row, meta) => {
                         return data ? data.replace("_", " ").toUpperCase() : '-';
                     }
                 },
                 {
-                    targets: [11],
+                    targets: [10],
                     render: (data, type, row, meta) => {
                         return `<button class="btn btn-dark" onclick="onShowDefectAreaImage('` + row.gambar + `', ` + row.defect_area_x + `, ` + row.defect_area_y + `)"><i class="fa fa-image"></i></button>`
                     }

@@ -43,11 +43,13 @@ Route::middleware('auth')->group(function () {
         Route::get('/get-master-plan', 'getMasterPlan')->name("get-master-plan");
         Route::get('/get-color', 'getColor')->name("get-color");
         Route::get('/get-size', 'getSize')->name("get-size");
+        Route::get('/get-sewing-qty', 'getSewingQty')->name("get-sewing-qty");
         Route::get('/get-secondary-master', 'getSecondaryMaster')->name("get-get-secondary-master");
     });
 
     Route::controller(SecondaryInController::class)->prefix('secondary-in')->middleware("role:in")->group(function () {
         Route::get('/get-secondary-in-list', 'getSecondaryInList')->name("in-get-secondary-in-list");
+        Route::get('/get-secondary-in-list-total', 'getSecondaryInListTotal')->name("in-get-secondary-in-list-total");
 
         Route::get('/get-secondary-in-out-daily', 'getSecondaryInOutDaily')->name("in-get-secondary-in-out-daily");
         Route::get('/get-secondary-in-out-detail', 'getSecondaryInOutDetail')->name("in-get-secondary-in-out-detail");

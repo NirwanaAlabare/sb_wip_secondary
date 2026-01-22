@@ -227,7 +227,7 @@ class SecondaryInController extends Controller
                 SUM(CASE WHEN output_secondary_out.status = 'rft' OR output_secondary_out.status = 'rework' THEN 1 ELSE 0 END) total_rft,
                 SUM(CASE WHEN output_secondary_out.status = 'defect' THEN 1 ELSE 0 END) total_defect,
                 SUM(CASE WHEN output_secondary_out.status = 'reject' THEN 1 ELSE 0 END) total_reject,
-                SUM(CASE WHEN output_secondary_out.id IS NOT NULL THEN 1 ELSE 0 END) total_process
+                SUM(CASE WHEN output_secondary_out.id IS NULL THEN 1 ELSE 0 END) total_process
             ")->
             leftJoin("output_secondary_out", "output_secondary_out.secondary_in_id", "=", "output_secondary_in.id")->
             leftJoin("output_secondary_master", "output_secondary_master.id", "=", "output_secondary_in.secondary_id")->
@@ -278,14 +278,13 @@ class SecondaryInController extends Controller
             whereRaw("
                 (
                     output_secondary_in.created_at between '".$request->tanggal." 00:00:00' and '".$request->tanggal." 23:59:59'
-                    OR
-                    output_secondary_out.created_at between '".$request->tanggal." 00:00:00' and '".$request->tanggal." 23:59:59'
                 )
             ")->
             whereRaw("
                 (
                     output_secondary_in.id IS NOT NULL AND
                     output_rfts.id IS NOT NULL AND
+                    output_secondary_in.kode_numbering is null AND
                     output_secondary_master.id = '".$request->secondary."'
                 )
             ")->
@@ -333,14 +332,13 @@ class SecondaryInController extends Controller
             whereRaw("
                 (
                     output_secondary_in.created_at between '".$request->tanggal." 00:00:00' and '".$request->tanggal." 23:59:59'
-                    OR
-                    output_secondary_out.created_at between '".$request->tanggal." 00:00:00' and '".$request->tanggal." 23:59:59'
                 )
             ")->
             whereRaw("
                 (
                     output_secondary_in.id IS NOT NULL AND
                     output_rfts.id IS NOT NULL AND
+                    output_secondary_in.kode_numbering is null AND
                     output_secondary_master.id = '".$request->selectedSecondary."'
                     ".($request->line ? "AND userpassword.username LIKE '%".$request->line."%'" : "")."
                 )
@@ -449,6 +447,7 @@ class SecondaryInController extends Controller
                 WHERE
                     `output_rfts`.`id` IS NOT NULL
                     AND output_rfts.master_plan_id is not null
+                    AND output_secondary_in.kode_numbering is null
                     AND output_secondary_in.updated_at >= '2025-12-01 00:00:00'
                     AND output_secondary_master.id = '".$request->selectedSecondary."'
                     ".$secondaryInSearch."
@@ -462,7 +461,12 @@ class SecondaryInController extends Controller
                     ".$secondaryInFilterAuthor."
                     ".$secondaryInFilterWaktu."
                 GROUP BY
-                    output_rfts.id
+                    userpassword.username,
+                    act_costing.id,
+                    so_det.color,
+                    so_det.size,
+                    output_secondary_in.created_by,
+                    output_secondary_in.updated_at
                 ORDER BY
                     output_secondary_in.updated_at DESC
             ")
@@ -471,76 +475,217 @@ class SecondaryInController extends Controller
         return Datatables::of($secondaryInList)->toJson();
     }
 
+    public function getSecondaryInListTotal(Request $request)
+    {
+        $secondaryInSearch = "";
+        if ($request->secondaryInSearch) {
+            $secondaryInSearch = "
+                AND (
+                    master_plan.tgl_plan LIKE '%".$request->secondaryInSearch."%' OR
+                    master_plan.sewing_line LIKE '%".$request->secondaryInSearch."%' OR
+                    act_costing.kpno LIKE '%".$request->secondaryInSearch."%' OR
+                    act_costing.styleno LIKE '%".$request->secondaryInSearch."%' OR
+                    master_plan.color LIKE '%".$request->secondaryInSearch."%' OR
+                    so_det.size LIKE '%".$request->secondaryInSearch."%' OR
+                    output_rfts.kode_numbering LIKE '%".$request->secondaryInSearch."%' OR
+                    output_secondary_in.kode_numbering LIKE '%".$request->secondaryInSearch."%'
+                )
+            ";
+        }
+
+        $secondaryInFilterKode = "";
+        if ($request->secondaryInFilterKode) {
+            $secondaryInFilterKode = " AND (output_rfts.kode_numbering LIKE '%".$request->secondaryInFilterKode."%' OR output_secondary_in.kode_numbering LIKE '%".$request->secondaryInFilterKode."%')";
+        }
+
+        $secondaryInFilterLine = "";
+        if ($request->secondaryInFilterLine) {
+            $secondaryInFilterLine = " AND master_plan.sewing_line LIKE '%".str_replace(" ", "_", $request->secondaryInFilterLine)."%' ";
+        }
+
+        $secondaryInFilterSecondary = "";
+        if ($request->secondaryFilterSecondary) {
+            $secondaryInFilterSecondary = " AND output_secondary_master.secondary LIKE '%".$request->secondaryFilterSecondary."%' ";
+        }
+
+        $secondaryInFilterWs = "";
+        if ($request->secondaryInFilterWs) {
+            $secondaryInFilterWs = "
+                AND act_costing_ws.kpno LIKE '%".$request->secondaryInFilterWs."%' OR
+            ";
+        }
+
+        $secondaryInFilterStyle = "";
+        if ($request->secondaryInFilterStyle) {
+            $secondaryInFilterStyle = "
+                AND act_costing.styleno LIKE '%".$request->secondaryInFilterStyle."%' OR
+            ";
+        }
+
+        $secondaryInFilterColor = "";
+        if ($request->secondaryInFilterColor) {
+            $secondaryInFilterColor = "
+                AND so_det.color LIKE '%".$request->secondaryInFilterColor."%' OR
+            ";
+        }
+
+        $secondaryInFilterSize = "";
+        if ($request->secondaryInFilterSize) {
+            $secondaryInFilterSize = " AND so_det.size LIKE '%".$request->secondaryInFilterSize."%' ";
+        }
+
+        $secondaryInFilterAuthor = "";
+        if ($request->secondaryInFilterAuthor) {
+            $secondaryInFilterAuthor = " AND output_secondary_in.created_by_username LIKE '%".$request->secondaryInFilterAuthor."%' ";
+        }
+
+        $secondaryInFilterWaktu = "";
+        if ($request->secondaryInFilterWaktu) {
+            $secondaryInFilterWaktu = " AND COALESCE(output_secondary_in.updated_at, output_secondary_in.created_at) LIKE '%".$request->secondaryInFilterWaktu."%' ";
+        }
+
+        $secondaryInList = collect(
+            DB::select("
+            select
+                SUM(secondary_in_qty) total
+            from
+                (
+                    SELECT
+                        output_secondary_in.id,
+                        output_secondary_in.updated_at secondary_in_time,
+                        userpassword.username sewing_line,
+                        output_secondary_in.kode_numbering,
+                        output_rfts.so_det_id,
+                        act_costing.kpno ws,
+                        act_costing.styleno style,
+                        so_det.color,
+                        so_det.size,
+                        output_rfts.id rft_id,
+                        COUNT(output_secondary_in.id) as secondary_in_qty,
+                        output_secondary_master.secondary,
+                        output_secondary_in.created_by_username
+                    FROM
+                        `output_secondary_in`
+                        LEFT JOIN `output_secondary_master` ON `output_secondary_master`.`id` = `output_secondary_in`.`secondary_id`
+                        LEFT JOIN `output_rfts` ON `output_rfts`.`id` = `output_secondary_in`.`rft_id`
+                        LEFT JOIN `user_sb_wip` ON `user_sb_wip`.`id` = `output_rfts`.`created_by`
+                        LEFT JOIN `userpassword` ON `userpassword`.`line_id` = `user_sb_wip`.`line_id`
+                        LEFT JOIN `so_det` ON `so_det`.`id` = `output_rfts`.`so_det_id`
+                        LEFT JOIN `so` ON `so`.`id` = `so_det`.`id_so`
+                        LEFT JOIN `act_costing` ON `act_costing`.`id` = `so`.`id_cost`
+                        LEFT JOIN `master_plan` ON `master_plan`.`id` = `output_rfts`.`master_plan_id`
+                    WHERE
+                        `output_rfts`.`id` IS NOT NULL
+                        AND output_rfts.master_plan_id is not null
+                        AND output_secondary_in.kode_numbering is null
+                        AND output_secondary_in.updated_at >= '2025-12-01 00:00:00'
+                        AND output_secondary_master.id = '".$request->selectedSecondary."'
+                        ".$secondaryInSearch."
+                        ".$secondaryInFilterKode."
+                        ".$secondaryInFilterLine."
+                        ".$secondaryInFilterWs."
+                        ".$secondaryInFilterStyle."
+                        ".$secondaryInFilterColor."
+                        ".$secondaryInFilterSize."
+                        ".$secondaryInFilterSecondary."
+                        ".$secondaryInFilterAuthor."
+                        ".$secondaryInFilterWaktu."
+                    GROUP BY
+                        userpassword.username,
+                        act_costing.id,
+                        so_det.color,
+                        so_det.size,
+                        output_secondary_in.created_by,
+                        output_secondary_in.updated_at
+                    ORDER BY
+                        output_secondary_in.updated_at DESC
+                ) secondary
+            ")
+        )->first();
+
+        return $secondaryInList ? $secondaryInList->total : null;
+    }
+
     public function submitSecondaryIn(Request $request)
     {
         $validatedRequest = $request->validate([
-            'scannedSecondaryIn' => 'required',
             'selectedSecondary' => 'required',
+            'sewingLine' => 'required',
+            'worksheet' => 'required',
+            'color' => 'required',
+            'size' => 'required',
+            'qty' => 'required',
         ]);
 
-        $status = "";
-        $message = "";
+        // Check Output Sewing
+        $sewingOutputs = Rft::selectRaw("
+                output_rfts.id,
+                output_rfts.kode_numbering,
+                output_rfts.so_det_id,
+                output_secondary_master.secondary,
+                act_costing.kpno ws,
+                act_costing.styleno style,
+                so_det.color,
+                so_det.size,
+                userpassword.username sewing_line,
+                output_secondary_in.id secondary_in_id
+            ")->
+            leftJoin("user_sb_wip", "user_sb_wip.id", "=", "output_rfts.created_by")->
+            leftJoin("userpassword", "userpassword.line_id", "=", "user_sb_wip.line_id")->
+            leftJoin("so_det", "so_det.id", "=", "output_rfts.so_det_id")->
+            leftJoin("master_plan", "master_plan.id", "=", "output_rfts.master_plan_id")->
+            leftJoin("act_costing", "act_costing.id", "=", "master_plan.id_ws")->
+            leftJoin("output_secondary_in", "output_secondary_in.rft_id", "=", "output_rfts.id")->
+            leftJoin("output_secondary_master", "output_secondary_master.id", "=", "output_secondary_in.secondary_id")->
+            whereNull("output_rfts.kode_numbering")->
+            whereNull("output_secondary_in.id")->
+            where("userpassword.username", $validatedRequest['sewingLine'])->
+            where("act_costing.id", $validatedRequest['worksheet'])->
+            where("so_det.color", $validatedRequest['color'])->
+            where("so_det.size", $validatedRequest['size'])->
+            limit($validatedRequest['qty'])->
+            get();
 
-        if ($request->scannedSecondaryIn) {
-            $scannedOutput = Rft::selectRaw("
-                    output_rfts.id,
-                    output_rfts.kode_numbering,
-                    output_rfts.so_det_id,
-                    output_secondary_master.secondary,
-                    act_costing.kpno ws,
-                    act_costing.styleno style,
-                    so_det.color,
-                    so_det.size,
-                    userpassword.username sewing_line,
-                    output_secondary_in.id secondary_in_id
-                ")->
-                leftJoin("user_sb_wip", "user_sb_wip.id", "=", "output_rfts.created_by")->
-                leftJoin("userpassword", "userpassword.line_id", "=", "user_sb_wip.line_id")->
-                leftJoin("so_det", "so_det.id", "=", "output_rfts.so_det_id")->
-                leftJoin("master_plan", "master_plan.id", "=", "output_rfts.master_plan_id")->
-                leftJoin("act_costing", "act_costing.id", "=", "master_plan.id_ws")->
-                leftJoin("output_secondary_in", "output_secondary_in.rft_id", "=", "output_rfts.id")->
-                leftJoin("output_secondary_master", "output_secondary_master.id", "=", "output_secondary_in.secondary_id")->
-                whereNotNull("output_rfts.id")->
-                where("output_rfts.kode_numbering", $validatedRequest['scannedSecondaryIn'])->
-                first();
+        if ($sewingOutputs) {
 
-            if ($scannedOutput) {
-                $secondaryIn = SewingSecondaryIn::where("rft_id", $scannedOutput->id)->first();
+            // Prepare Secondary IN Array
+            $secondaryInInputArray = [];
+            $secondaryInExistArr = [];
+            foreach ($sewingOutputs as $sewingOutput) {
+                $secondaryIn = SewingSecondaryIn::where("rft_id", $sewingOutput->id)->first();
 
                 if (!$secondaryIn) {
-                    $createsecondaryIn = SewingSecondaryIn::create([
-                        "kode_numbering" => $scannedOutput->kode_numbering,
-                        "rft_id" => $scannedOutput->id,
+                    array_push($secondaryInInputArray, [
+                        "rft_id" => $sewingOutput->id,
                         "secondary_id" => $validatedRequest['selectedSecondary'],
                         "created_by" => Auth::user()->line_id,
                         "created_by_username" => Auth::user()->username,
+                        "created_at" => Carbon::now(),
+                        "updated_at" => Carbon::now(),
                     ]);
-
-                    if ($createsecondaryIn) {
-                        $status = "success";
-                        $message = "OUTPUT dengan KODE '".$validatedRequest['scannedSecondaryIn']."' berhasil masuk ke 'SECONDARY IN'";
-                    } else {
-                        $status = "error";
-                        $message = "Terjadi Kesalahan.";
-                    }
                 } else {
-                    $status = "warning";
-                    $message = "QR sudah discan di ".strtoupper($scannedOutput->secondary);
+                    array_push($secondaryInExistArr, $sewingOutput->id);
                 }
-            } else {
-                $status = "error";
-                $message = "OUTPUT dengan QR '".$validatedRequest['scannedSecondaryIn']."' tidak ditemukan";
             }
-        } else {
-            $status = "error";
-            $message = "QR tidak sesuai";
+
+            // Store Secondary IN
+            $secondaryInStore = SewingSecondaryIn::insert($secondaryInInputArray);
+
+            return array(
+                "status" => 200,
+                "message" => "Transaksi Selesai",
+                "success" => count($secondaryInInputArray),
+                "fail" => $validatedRequest['qty'] - (count($secondaryInInputArray) + count($secondaryInExistArr)),
+                "exist" => count($secondaryInExistArr),
+            );
         }
 
         return array(
-            "status" => $status,
-            "message" => $message,
-            "data" => $scannedOutput
+            "status" => 400,
+            "message" => "Data tidak ditemukan",
+            "success" => 0,
+            "fail" => $validatedRequest['qty'],
+            "exist" => 0,
         );
     }
 

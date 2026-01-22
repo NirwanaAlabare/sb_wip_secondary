@@ -1,6 +1,11 @@
 @extends('layouts.index', ['mode' => 'in'])
 
 @section('custom-link')
+    <!-- DataTables -->
+    <link rel="stylesheet" href="{{ asset('datatables/datatables-bs4/css/dataTables.bootstrap4.min.css') }}">
+    <link rel="stylesheet" href="{{ asset('datatables/datatables-responsive/css/responsive.bootstrap4.min.css') }}">
+    <link rel="stylesheet" href="{{ asset('datatables/datatables-buttons/css/buttons.bootstrap4.min.css') }}">
+    <link rel="stylesheet" href="{{ asset('datatables/datatables-rowgroup/css/rowGroup.bootstrap4.min.css') }}">
     <style>
         div.dataTables_wrapper div.dataTables_processing {
             top: 5%;
@@ -14,6 +19,11 @@
 @endsection
 
 @section('custom-script')
+    {{-- DataTables --}}
+    <script src="{{ asset('datatables/datatables/jquery.dataTables.min.js') }}"></script>
+    <script src="{{ asset('datatables/datatables-bs4/js/dataTables.bootstrap4.min.js') }}"></script>
+    <script src="{{ asset('datatables/datatables-responsive/js/dataTables.responsive.min.js') }}"></script>
+    <script src="{{ asset('datatables/datatables-responsive/js/responsive.bootstrap4.min.js') }}"></script>
     <script>
         document.addEventListener("DOMContentLoaded", () => {
             $('.select2').select2({
