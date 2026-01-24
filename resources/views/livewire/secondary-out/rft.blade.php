@@ -1,5 +1,5 @@
 <div>
-    <div class="loading-container-fullscreen" wire:loading wire:target="setAndSubmitInput, submitInput, submitRapidInput">
+    <div class="loading-container-fullscreen" wire:loading wire:target="submitInput">
         <div class="loading-container">
             <div class="loading"></div>
         </div>
@@ -9,8 +9,7 @@
         <div class="col-md-4">
             <div class="card h-100">
                 <div class="card-header d-flex justify-content-between align-items-center bg-rft text-light">
-                    <p class="mb-0 fs-5">Scan QR</p>
-                    {{-- <button class="btn btn-dark" wire:click="$emit('showModal', 'rapidRft')"><i class="fa-solid fa-layer-group"></i></button> --}}
+                    <p class="mb-0 fs-5">Qty</p>
                 </div>
                 <div class="card-body" wire:ignore.self>
                     @error('numberingInput')
@@ -19,8 +18,11 @@
                             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                         </div>
                     @enderror
-                    {{-- <div id="rft-reader" width="600px"></div> --}}
-                    <input type="text" class="qty-input h-75" id="scannedItemRft" name="scannedItemRft">
+                    <input type="number" class="qty-input" id="rft-input" value="{{ $outputInput }}" wire:model.defer='outputInput'>
+                    <div class="d-flex justify-content-between gap-1 mt-3">
+                        <button class="btn btn-danger w-50 fs-3" id="decrement" wire:click="outputDecrement">-1</button>
+                        <button class="btn btn-success w-50 fs-3" id="increment" wire:click="outputIncrement">+1</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -47,29 +49,51 @@
                         <div class="loading mx-auto"></div>
                     </div>
                     <div class="row h-100 row-gap-3" id="content-rft">
-                        <div class="col-md-6">
-                            <label class="form-label">Worksheet</label>
-                            <input type="text" class="form-control" id="worksheet-rft" wire:model="worksheetRft" readonly>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Style</label>
-                            <input type="text" class="form-control" id="style-rft" wire:model="styleRft" readonly>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Color</label>
-                            <input type="text" class="form-control" id="color-rft" wire:model="colorRft" readonly>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Size</label>
-                            <input type="text" class="form-control" id="size-rft" wire:model="sizeRft" readonly>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Kode QR</label>
-                            <input type="text" class="form-control" id="kode-rft" wire:model="kodeRft" readonly>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Line</label>
-                            <input type="text" class="form-control" id="line-rft" wire:model="lineRft" readonly>
+                        <div class="col-md-12">
+                            <div class="row g-3" wire:ignore>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Worksheet</label>
+                                    <select class="form-control select2" id="worksheetRft" name="worksheet">
+                                        <option value="">Pilih Worksheet</option>
+                                        @if ($orders)
+                                            @foreach ($orders as $order)
+                                                <option value="{{ $order->id_ws }}" data-style="{{ $order->style }}">{{ $order->no_ws }}</option>
+                                            @endforeach
+                                        @endif
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Style</label>
+                                    <input type="text" class="form-control" id="styleRft" name="style" readonly>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Color</label>
+                                    <select class="form-control select2" id="colorRft" name="color">
+                                        <option value=""></option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Size</label>
+                                    <select class="form-control select2" id="sizeRft" name="size">
+                                        <option value=""></option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Line</label>
+                                    <select class="form-control select2" id="sewingLineRft" name="sewingLine">
+                                        <option value="">Pilih Line</option>
+                                        @if ($lines)
+                                            @foreach ($lines as $line)
+                                                <option value="{{ $line->username }}">{{ $line->username }}</option>
+                                            @endforeach
+                                        @endif
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">WIP Qty</label>
+                                    <input type="number" class="form-control" id="secondaryInQtyRft" name="secondaryInQty" readonly>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -87,7 +111,6 @@
                 <table class="table table-bordered w-100" id="rft-secondary-out-list-table">
                     <thead>
                         <tr>
-                            <th>Kode Numbering</th>
                             <th>No. WS</th>
                             <th>Style</th>
                             <th>Color</th>
@@ -106,28 +129,6 @@
         </div>
     </div>
 
-    {{-- Rapid RFT --}}
-    <div class="modal" tabindex="-1" id="rapid-rft-modal" wire:ignore.self>
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header bg-rft text-light">
-                    <h5 class="modal-title"><i class="fa-solid fa-clone"></i> RFT Rapid Scan</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <p class="text-center">Scanned Item : <b>{{ $rapidRftCount }}</b></p>
-                        <input type="text" class="qty-input" id="rapid-rft-input">
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Batal</button>
-                    <button type="button" class="btn btn-success" data-bs-dismiss="modal" wire:click='submitRapidInput'>Selesai</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <div class="mt-3">
         <p class="text-center opacity-50 my-0"><small><i>{{ date('Y') }} &copy; Nirwana Digital Solution</i></small></p>
     </div>
@@ -136,7 +137,7 @@
     <footer class="footer fixed-bottom py-3">
         <div class="container-fluid">
             <div class="d-flex justify-content-end">
-                <button class="btn btn-dark btn-lg ms-auto fs-3" onclick="triggerSubmit()" {{ $submitting ? 'disabled' : ''}}>SELESAI</button>
+                <button class="btn btn-dark btn-lg ms-auto fs-3" onclick="submitSecondaryIn()">SELESAI</button>
             </div>
         </div>
     </footer>
@@ -191,63 +192,89 @@
             //     });
             // }
 
-        var scannedItemRftInput = document.getElementById("scannedItemRft");
+        // On Livewire Render
+        document.addEventListener('livewire:load', () => {
+            Livewire.hook('message.processed', (message, component) => {
+                // $('.select2').select2({
+                //     theme: "bootstrap-5",
+                //     width: $( this ).data( 'width' ) ? $( this ).data( 'width' ) : $( this ).hasClass( 'w-100' ) ? '100%' : 'style',
+                //     placeholder: $( this ).data( 'placeholder' ),
+                // });
+            })
+        })
 
-        // scannedItemRftInput.addEventListener("change", async function () {
-        //     @this.numberingInput = this.value;
+        $("#worksheetRft").on("change", function (event) {
+            let selectedOption = this.options[this.selectedIndex];
 
-        //     this.setAttribute("disabled", true);
+            $("#styleRft").val(selectedOption.getAttribute("data-style"));
 
-        //     // submit
-        //     await @this.submitInput();
-
-        //     this.removeAttribute("disabled");
-        //     this.value = '';
-        // });
-        scannedItemRftInput.addEventListener("change", async function () {
-            const value = this.value;
-
-            // this.setAttribute("disabled", true);
-
-            // submit
-            await @this.submitInput(value);
-
-            // this.removeAttribute("disabled");
-            this.value = '';
+            updateColorList("Rft");
         });
 
-        var scannedRapidRftInput = document.getElementById("rapid-rft-input");
-
-        scannedRapidRftInput.addEventListener("change", function () {
-            @this.pushRapidRft(this.value, null, null);
-
-            this.value = '';
+        $("#colorRft").on("change", function (event) {
+            updateSizeList("Rft");
         });
 
-        Livewire.on('qrInputFocus', async (type) => {
-            if (type == 'rft') {
-                scannedItemRftInput.focus();
-
-                rftSecondaryOutListReload();
-            }
+        $("#sizeRft").on("change", function (event) {
+            updateSecondaryInQty("Rft");
         });
 
-        Livewire.on('toInputPanel', async (type) => {
-            if (type == 'rft') {
-                scannedItemRftInput.focus();
-            }
+        $("#sewingLineRft").on("change", function (event) {
+            updateSecondaryInQty("Rft");
         });
 
         // Livewire.on('fromInputPanel', () => {
         //     clearRftScan();
         // });
 
-        function triggerSubmit() {
-            if ($("#scannedItemRft").val()) {
-                $("#scannedItemRft").trigger("change");
-            }
+        function submitSecondaryRft() {
+            document.getElementById("loading").classList.remove("d-none");
 
-            $("#scannedItemRft").focus();
+            $.ajax({
+                type: "post",
+                url: "{{ route('out-submit-secondary-out-rft') }}",
+                data: {
+                    selectedSecondary: $("#selectedSecondary").val(),
+                    sewingLine : $("#sewingLineRft").val(),
+                    worksheet : $("#worksheetRft").val(),
+                    style : $("#styleRft").val(),
+                    color : $("#colorRft").val(),
+                    size : $("#sizeRft").val(),
+                    qty : $("#rft-input").val(),
+                },
+                dataType: "json",
+                success: function (response) {
+                    document.getElementById("loading").classList.add("d-none");
+
+                    if (response) {
+                        // Success
+                        if (response.success > 0) {
+                            showNotification("success", response.success+" output berhasil disimpan.");
+                        }
+
+                        // fail
+                        if (response.fail > 0) {
+                            showNotification("error", response.fail+" output gagal disimpan/tidak ditemukan.");
+                        }
+
+                        // exist
+                        if (response.exist > 0) {
+                            showNotification("warning", response.exist+" output sudah ada .");
+                        }
+
+                        rftSecondaryOutListReload();
+
+                        updateSecondaryInQty("Rft");
+                    }
+                },
+                error: function (jqXHR) {
+                    document.getElementById("loading").classList.add("d-none");
+
+                    let res = jqXHR.responseJSON;
+
+                    showValidationError(res, 'Rft')
+                }
+            });
         }
 
         // RFT Secondary Out List
@@ -268,9 +295,6 @@
                 }
             },
             columns: [
-                {
-                    data: 'kode_numbering',
-                },
                 {
                     data: 'ws',
                 },

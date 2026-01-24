@@ -9,6 +9,8 @@ use App\Models\SignalBit\DefectPacking;
 use App\Models\SignalBit\OutputFinishing;
 use App\Models\SignalBit\SewingSecondaryIn;
 use App\Models\SignalBit\SewingSecondaryOut;
+use App\Models\SignalBit\SewingSecondaryOutDefect;
+use App\Models\SignalBit\SewingSecondaryOutReject;
 use App\Models\SignalBit\SewingSecondaryMaster;
 use App\Exports\SecondaryInOutExport;
 use Maatwebsite\Excel\Facades\Excel;
@@ -593,6 +595,452 @@ class SecondaryOutController extends Controller
         "));
 
         return Datatables::of($total)->toJson();
+    }
+
+    public function getSecondaryInWipTotal(Request $request) {
+        $secondaryInOutputs = DB::connection("mysql_sb")->table("output_secondary_in")->selectRaw("
+                COUNT(output_secondary_in.id) total_secondary_in_wip
+            ")->
+            leftJoin("output_rfts", "output_rfts.id", "=", "output_secondary_in.rft_id")->
+            leftJoin("output_secondary_out", "output_secondary_out.secondary_in_id", "=", "output_secondary_in.id")->
+            leftJoin("so_det", "so_det.id", "=", "output_rfts.so_det_id")->
+            leftJoin("so", "so.id", "=", "so_det.id_so")->
+            leftJoin("act_costing", "act_costing.id", "=", "so.id_cost")->
+            leftJoin("user_sb_wip", "user_sb_wip.id", "=", "output_rfts.created_by")->
+            leftJoin("userpassword", "userpassword.line_id", "=", "user_sb_wip.line_id")->
+            whereRaw("
+                output_rfts.kode_numbering is null and
+                output_secondary_out.id is null and
+                act_costing.id = '".$request->worksheet."' and
+                so_det.color = '".$request->color."' and
+                so_det.size = '".$request->size."'
+                ".($request->sewingLine ? " and userpassword.username = '".$request->sewingLine."' " : "")."
+            ")->
+            first();
+
+        return $secondaryInOutputs ? $secondaryInOutputs->total_secondary_in_wip : 0;
+    }
+
+    public function submitSecondaryOutRft(Request $request) {
+        $validatedRequest = $request->validate([
+            'selectedSecondary' => 'required',
+            'sewingLine' => 'required',
+            'worksheet' => 'required',
+            'color' => 'required',
+            'size' => 'required',
+            'qty' => 'required',
+        ],[
+            'selectedSecondary.required' => 'Harap tentukan secondary',
+            'sewingLine' => 'Harap tentukan sewing line',
+            'worksheet' => 'Harap tentukan worksheet',
+            'color' => 'Harap tentukan color',
+            'size' => 'Harap tentukan size',
+            'qty' => 'Harap tentukan qty',
+        ]);
+
+        // Check Output Sewing
+        $secondaryInOutputs = SewingSecondaryIn::selectRaw("
+                output_secondary_in.id,
+                output_rfts.so_det_id,
+                output_secondary_master.secondary,
+                act_costing.kpno ws,
+                act_costing.styleno style,
+                so_det.color,
+                so_det.size,
+                userpassword.username sewing_line
+            ")->
+            leftJoin("output_rfts", "output_rfts.id", "=", "output_secondary_in.rft_id")->
+            leftJoin("user_sb_wip", "user_sb_wip.id", "=", "output_rfts.created_by")->
+            leftJoin("userpassword", "userpassword.line_id", "=", "user_sb_wip.line_id")->
+            leftJoin("so_det", "so_det.id", "=", "output_rfts.so_det_id")->
+            leftJoin("master_plan", "master_plan.id", "=", "output_rfts.master_plan_id")->
+            leftJoin("act_costing", "act_costing.id", "=", "master_plan.id_ws")->
+            leftJoin("output_secondary_master", "output_secondary_master.id", "=", "output_secondary_in.secondary_id")->
+            leftJoin("output_secondary_out", "output_secondary_out.secondary_in_id", "=", "output_secondary_in.id")->
+            whereNull("output_rfts.kode_numbering")->
+            whereNull("output_secondary_out.id")->
+            where("output_secondary_in.secondary_id", $validatedRequest['selectedSecondary'])->
+            where("userpassword.username", $validatedRequest['sewingLine'])->
+            where("act_costing.id", $validatedRequest['worksheet'])->
+            where("so_det.color", $validatedRequest['color'])->
+            where("so_det.size", $validatedRequest['size'])->
+            limit($validatedRequest['qty'])->
+            get();
+
+        if ($secondaryInOutputs) {
+
+            // Prepare Secondary OUT Array
+            $secondaryOutInputArray = [];
+            $secondaryOutExistArr = [];
+            foreach ($secondaryInOutputs as $secondaryInOutput) {
+
+                // Check Secondary Out Availibility
+                $secondaryOut = SewingSecondaryOut::where("secondary_in_id", $secondaryInOutput->id)->first();
+                if (!$secondaryOut) {
+                    array_push($secondaryOutInputArray, [
+                        "secondary_in_id" => $secondaryInOutput->id,
+                        "status" => "rft",
+                        "created_by" => Auth::user()->line_id,
+                        "created_by_username" => Auth::user()->username,
+                        "created_at" => Carbon::now(),
+                        "updated_at" => Carbon::now(),
+                    ]);
+                } else {
+                    array_push($secondaryOutExistArr, $secondaryInOutput->id);
+                }
+
+            }
+
+            // Store Secondary OUT
+            $secondaryOutStore = SewingSecondaryOut::insert($secondaryOutInputArray);
+
+            return array(
+                "status" => 200,
+                "message" => "Transaksi Selesai",
+                "success" => count($secondaryOutInputArray),
+                "fail" => $validatedRequest['qty'] - (count($secondaryOutInputArray) + count($secondaryOutExistArr)),
+                "exist" => count($secondaryOutExistArr),
+            );
+
+        }
+
+        return array(
+            "status" => 400,
+            "message" => "Data tidak ditemukan",
+            "success" => 0,
+            "fail" => $validatedRequest['qty'],
+            "exist" => 0,
+        );
+    }
+
+    public function submitSecondaryOutDefect(Request $request) {
+        $validatedRequest = $request->validate([
+            'selectedSecondary' => 'required',
+            'sewingLine' => 'required',
+            'worksheet' => 'required',
+            'color' => 'required',
+            'size' => 'required',
+            'defectType' => 'required',
+            'defectArea' => 'required',
+            'defectAreaPositionX' => 'required',
+            'defectAreaPositionY' => 'required',
+            'qty' => 'required',
+        ],[
+            'selectedSecondary.required' => 'Harap tentukan secondary <br>',
+            'sewingLine.required' => 'Harap tentukan sewing line <br>',
+            'worksheet.required' => 'Harap tentukan worksheet <br>',
+            'color.required' => 'Harap tentukan color <br>',
+            'size.required' => 'Harap tentukan size <br>',
+            'defectType.required' => 'Harap tentukan Defect Type <br>',
+            'defectArea.required' => 'Harap tentukan Defect Area <br>',
+            'defectAreaPositionX.required' => 'Harap tentukan Defect Area Position X <br>',
+            'defectAreaPositionY.required' => 'Harap tentukan Defect Area Position Y <br>',
+            'qty.required' => 'Harap tentukan qty <br>',
+        ]);
+
+        // Check Output Sewing
+        $secondaryInOutputs = SewingSecondaryIn::selectRaw("
+                output_secondary_in.id,
+                output_rfts.so_det_id,
+                output_secondary_master.secondary,
+                act_costing.kpno ws,
+                act_costing.styleno style,
+                so_det.color,
+                so_det.size,
+                userpassword.username sewing_line
+            ")->
+            leftJoin("output_rfts", "output_rfts.id", "=", "output_secondary_in.rft_id")->
+            leftJoin("user_sb_wip", "user_sb_wip.id", "=", "output_rfts.created_by")->
+            leftJoin("userpassword", "userpassword.line_id", "=", "user_sb_wip.line_id")->
+            leftJoin("so_det", "so_det.id", "=", "output_rfts.so_det_id")->
+            leftJoin("master_plan", "master_plan.id", "=", "output_rfts.master_plan_id")->
+            leftJoin("act_costing", "act_costing.id", "=", "master_plan.id_ws")->
+            leftJoin("output_secondary_master", "output_secondary_master.id", "=", "output_secondary_in.secondary_id")->
+            leftJoin("output_secondary_out", "output_secondary_out.secondary_in_id", "=", "output_secondary_in.id")->
+            whereNull("output_rfts.kode_numbering")->
+            whereNull("output_secondary_out.id")->
+            where("output_secondary_in.secondary_id", $validatedRequest['selectedSecondary'])->
+            where("userpassword.username", $validatedRequest['sewingLine'])->
+            where("act_costing.id", $validatedRequest['worksheet'])->
+            where("so_det.color", $validatedRequest['color'])->
+            where("so_det.size", $validatedRequest['size'])->
+            limit($validatedRequest['qty'])->
+            get();
+
+        if ($secondaryInOutputs) {
+
+            // Prepare Secondary OUT Array
+            $secondaryOutInputArray = [];
+            $secondaryOutExistArr = [];
+            foreach ($secondaryInOutputs as $secondaryInOutput) {
+
+                // Check Secondary Out Availibility
+                $secondaryOut = SewingSecondaryOut::where("secondary_in_id", $secondaryInOutput->id)->first();
+                if (!$secondaryOut) {
+
+                    // Create Secondary Out Defect
+                    $insertDefect = SewingSecondaryOut::create([
+                        'kode_numbering' => $secondaryInOutput->kode_numbering,
+                        'secondary_in_id' => $secondaryInOutput->id,
+                        'status' => 'defect',
+                        'created_at' => Carbon::now(),
+                        'updated_at' => Carbon::now(),
+                        'created_by' => Auth::user()->line_id,
+                        'created_by_username' => Auth::user()->username
+                    ]);
+
+                    if ($insertDefect) {
+
+                        // Prepare Secondary Out Defect Detail
+                        array_push($secondaryOutInputArray, [
+                            'secondary_out_id' => $insertDefect->id,
+                            'defect_type_id' => $validatedRequest['defectType'],
+                            'defect_area_id' => $validatedRequest['defectArea'],
+                            'defect_area_x' => $validatedRequest['defectAreaPositionX'],
+                            'defect_area_y' => $validatedRequest['defectAreaPositionY'],
+                            'status' => 'defect',
+                            'created_by' => Auth::user()->line_id,
+                            'created_by_username' => Auth::user()->username,
+                            'created_at' => Carbon::now(),
+                            'updated_at' => Carbon::now(),
+                        ]);
+
+                    }
+                } else {
+                    array_push($secondaryOutExistArr, $secondaryInOutput->id);
+                }
+            }
+
+            // Store Secondary OUT Defect Detail
+            $secondaryOutStore = SewingSecondaryOutDefect::insert($secondaryOutInputArray);
+
+            return array(
+                "status" => 200,
+                "message" => "Transaksi Selesai",
+                "success" => count($secondaryOutInputArray),
+                "fail" => $validatedRequest['qty'] - (count($secondaryOutInputArray) + count($secondaryOutExistArr)),
+                "exist" => count($secondaryOutExistArr),
+            );
+
+        }
+
+        return array(
+            "status" => 400,
+            "message" => "Data tidak ditemukan",
+            "success" => 0,
+            "fail" => $validatedRequest['qty'],
+            "exist" => 0,
+        );
+    }
+
+    public function submitSecondaryOutRework(Request $request) {
+        $validatedRequest = $request->validate([
+            'selectedSecondary' => 'required',
+            'sewingLine' => 'required',
+            'worksheet' => 'required',
+            'color' => 'required',
+            'size' => 'required',
+            'qty' => 'required',
+            'id' => 'required'
+        ]);
+
+        // Get Secondary Out Defect Detail
+        $scannedDefectData = SewingSecondaryOutDefect::where("id", $id)->first();
+
+        if ($scannedDefectData) {
+
+            // Update Secondary Out Defect Detail
+            $updateSecondaryOutDefect = SewingSecondaryOutDefect::where("id", $scannedDefectData->id)->update([
+                "status" => "reworked",
+                "reworked_by" => Auth::user()->line_id,
+                "reworked_by_username" => Auth::user()->username,
+                "reworked_at" => $now,
+            ]);
+
+            // Update Secondary Out Defect
+            $updateSecondaryOut = SewingSecondaryOut::where("id", $scannedDefectData->secondary_out_id)->update([
+                "status" => "rework",
+            ]);
+
+            return array(
+                "status" => 200,
+                "message" => "Data defect "+$scannedDefectData->id+" berhasil di-rework",
+            );
+        } else {
+            return array(
+                "status" => 400,
+                "message" => "Data defect tidak ditemukan",
+            );
+        }
+
+        return array(
+            "status" => 400,
+            "message" => "Data tidak ditemukan",
+        );
+    }
+
+    public function submitSecondaryOutReject() {
+        $validatedRequest = $request->validate([
+            'selectedSecondary' => 'required',
+            'sewingLine' => 'required',
+            'worksheet' => 'required',
+            'color' => 'required',
+            'size' => 'required',
+            'defectType' => 'required',
+            'defectArea' => 'required',
+            'defectAreaPositionX' => 'required',
+            'defectAreaPositionY' => 'required',
+            'qty' => 'required',
+        ]);
+
+        // Check Output Sewing
+        $secondaryInOutputs = SewingSecondaryIn::selectRaw("
+                output_secondary_in.id,
+                output_rfts.so_det_id,
+                output_secondary_master.secondary,
+                act_costing.kpno ws,
+                act_costing.styleno style,
+                so_det.color,
+                so_det.size,
+                userpassword.username sewing_line
+            ")->
+            leftJoin("user_sb_wip", "user_sb_wip.id", "=", "output_rfts.created_by")->
+            leftJoin("userpassword", "userpassword.line_id", "=", "user_sb_wip.line_id")->
+            leftJoin("so_det", "so_det.id", "=", "output_rfts.so_det_id")->
+            leftJoin("master_plan", "master_plan.id", "=", "output_rfts.master_plan_id")->
+            leftJoin("act_costing", "act_costing.id", "=", "master_plan.id_ws")->
+            leftJoin("output_rfts", "output_rfts.id", "=", "output_secondary_in.rft_id")->
+            leftJoin("output_secondary_master", "output_secondary_master.id", "=", "output_secondary_in.secondary_id")->
+            whereNull("output_rfts.kode_numbering")->
+            where("output_secondary_in.secondary_id", $validatedRequest['selectedSecondary'])->
+            where("userpassword.username", $validatedRequest['sewingLine'])->
+            where("act_costing.id", $validatedRequest['worksheet'])->
+            where("so_det.color", $validatedRequest['color'])->
+            where("so_det.size", $validatedRequest['size'])->
+            limit($validatedRequest['qty'])->
+            get();
+
+        if ($secondaryInOutputs) {
+
+            // Prepare Secondary OUT Array
+            $secondaryOutInputArray = [];
+            $secondaryOutExistArr = [];
+            foreach ($secondaryInOutputs as $secondaryInOutput) {
+
+                // Check Secondary Out Availibility
+                $secondaryOut = SewingSecondaryOut::where("secondary_in_id", $secondaryInOutput->id)->first();
+                if (!$secondaryOut) {
+
+                    // Create Secondary Out Defect
+                    $insertDefect = SewingSecondaryOut::create([
+                        'kode_numbering' => $secondaryInData->kode_numbering,
+                        'secondary_in_id' => $secondaryInData->id,
+                        'status' => 'reject',
+                        'created_at' => Carbon::now(),
+                        'updated_at' => Carbon::now(),
+                        'created_by' => Auth::user()->line_id,
+                        'created_by_username' => Auth::user()->username
+                    ]);
+
+                    if ($insertDefect) {
+
+                        // Prepare Secondary Out Defect Detail
+                        array_push($secondaryOutInputArray, [
+                            'secondary_out_id' => $insertDefect->id,
+                            'defect_type_id' => $validatedData['defectType'],
+                            'defect_area_id' => $validatedData['defectArea'],
+                            'defect_area_x' => $validatedData['defectAreaPositionX'],
+                            'defect_area_y' => $validatedData['defectAreaPositionY'],
+                            'status' => 'mati',
+                            'created_by' => Auth::user()->line_id,
+                            'created_by_username' => Auth::user()->username,
+                            'created_at' => Carbon::now(),
+                            'updated_at' => Carbon::now(),
+                        ]);
+
+                    }
+                } else {
+                    array_push($secondaryOutExistArr, $secondaryInOutput->id);
+                }
+            }
+
+            // Store Secondary OUT Reject Detail
+            $secondaryOutStore = SewingSecondaryOutReject::insert($secondaryOutInputArray);
+
+            return array(
+                "status" => 200,
+                "message" => "Transaksi Selesai",
+                "success" => count($secondaryOutInputArray),
+                "fail" => $validatedRequest['qty'] - (count($secondaryOutInputArray) + count($secondaryOutExistArr)),
+                "exist" => count($secondaryOutExistArr),
+            );
+        }
+
+        return array(
+            "status" => 400,
+            "message" => "Data tidak ditemukan",
+            "success" => 0,
+            "fail" => $validatedRequest['qty'],
+            "exist" => 0,
+        );
+    }
+
+    public function submitSecondaryOutRejectDefect(Request $request) {
+        $scannedDefectData = null;
+        if ($request->id) {
+            $scannedDefectData = SewingSecondaryOutDefect::where("id", $request->id)->first();
+        }
+
+        if ($scannedDefectData) {
+            // Update Secondary OUT Defect
+            if ($scannedDefectData->status == "defect") {
+                $scannedDefectData->status = "rejected";
+                $scannedDefectData->save();
+
+                $rejectType = $scannedDefectData->defect_type_id;
+                $rejectArea = $scannedDefectData->defect_area_id;
+                $rejectAreaPositionX = $scannedDefectData->defect_area_x;
+                $rejectAreaPositionY = $scannedDefectData->defect_area_y;
+
+                // Get Secondary OUT
+                $secondaryOutData = SewingSecondaryOut::where("id", $scannedDefectData->secondary_out_id)->first();
+
+                if ($secondaryOutData) {
+                    // Update Secondary OUT
+                    $secondaryOutData->status = 'reject';
+                    $secondaryOutData->save();
+
+                    // Create Secondary OUT Reject Detail
+                    $insertReject = SewingSecondaryOutReject::create([
+                        "secondary_out_id" => $secondaryOutData->id,
+                        'defect_type_id' => $rejectType,
+                        'defect_area_id' => $rejectArea,
+                        'defect_area_x' => $rejectAreaPositionX,
+                        'defect_area_y' => $rejectAreaPositionY,
+                        'status' => 'defect',
+                        'created_by' => Auth::user()->line_id,
+                        'created_by_username' => Auth::user()->username,
+                    ]);
+
+                    return array(
+                        "status" => 200,
+                        "message" => "Data Defect ".$scannedDefectData->id." berhasil disimpan.",
+                    );
+                }
+
+            } else {
+
+                return array(
+                    "status" => 200,
+                    "message" => "Data DEFECT status sudah : <b>'".$scannedDefectData->status."'</b>",
+                );
+            }
+        }
+
+        return array(
+            "status" => 400,
+            "message" => "Data DEFECT tidak ditemukan",
+        );
     }
 
     public function exportSecondaryInOut(Request $request) {

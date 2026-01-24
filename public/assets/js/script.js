@@ -451,6 +451,24 @@ function submitForm(e, evt) {
     });
 }
 
+function showValidationError(errors, suffix = '') {
+    let message = '';
+    for (let key in errors.errors) {
+        console.log(key, key+suffix)
+        message += errors.errors[key]+' ';
+
+        if (document.getElementById(key+suffix)) {
+            document.getElementById(key+suffix).classList.add('is-invalid');
+        }
+    };
+
+    iziToast.error({
+        title: 'Error',
+        message: message,
+        position: 'topCenter'
+    });
+}
+
 // Latest Output Chart
 // var latestOutput='';
 

@@ -4,6 +4,7 @@ namespace App\Http\Livewire\SecondaryOut;
 
 use Livewire\Component;
 use Illuminate\Session\SessionManager;
+use App\Models\SignalBit\UserPassword;
 use App\Models\SignalBit\SewingSecondaryIn;
 use App\Models\SignalBit\SewingSecondaryOut;
 use App\Models\SignalBit\Rft as RftModel;
@@ -15,6 +16,11 @@ use Str;
 class Rft extends Component
 {
     public $dateRft;
+
+    public $lines;
+    public $orders;
+
+    public $outputInput;
 
     public $sizeInput;
     public $sizeInputText;
@@ -56,6 +62,11 @@ class Rft extends Component
     {
         $this->dateRft = null;
 
+        $this->lines = null;
+        $this->orders = null;
+
+        $this->outputInput = 0;
+
         $this->sizeInput = null;
         $this->sizeInputText = null;
         $this->noCutInput = null;
@@ -91,207 +102,23 @@ class Rft extends Component
         $this->resetErrorBag();
     }
 
-    private function checkIfNumberingExists($numberingInput = null): bool
+    public function outputIncrement()
     {
-        $currentData = DB::table('output_secondary_out')->where('kode_numbering', ($numberingInput ?? $this->numberingInput))->first();
-        if ($currentData) {
-            $this->addError('numberingInput', 'Kode QR sudah discan di '.strtoupper($currentData->status).'.');
+        $this->outputInput++;
+    }
 
-            return true;
+    public function outputDecrement()
+    {
+        if (($this->outputInput-1) < 1) {
+            $this->emit('alert', 'warning', "Kuantitas output tidak bisa kurang dari 1.");
+        } else {
+            $this->outputInput--;
         }
-
-        return false;
     }
 
     public function clearInput()
     {
         $this->sizeInput = null;
-    }
-
-    public function submitInput($value)
-    {
-        $this->emit('qrInputFocus', 'rft');
-
-        $numberingInput = $value;
-
-        if ($numberingInput) {
-            // if (str_contains($numberingInput, 'WIP')) {
-            //     $numberingData = DB::connection("mysql_nds")->table("stocker_numbering")->where("kode", $numberingInput)->first();
-            // } else {
-            //     $numberingCodes = explode('_', $numberingInput);
-
-            //     if (count($numberingCodes) > 2) {
-            //         $numberingInput = substr($numberingCodes[0],0,4)."_".$numberingCodes[1]."_".$numberingCodes[2];
-            //         $numberingData = DB::connection("mysql_nds")->table("year_sequence")->selectRaw("year_sequence.*, year_sequence.id_year_sequence no_cut_size")->where("id_year_sequence", $numberingInput)->first();
-            //     } else {
-            //         $numberingData = DB::connection("mysql_nds")->table("month_count")->selectRaw("month_count.*, month_count.id_month_year no_cut_size")->where("id_month_year", $numberingInput)->first();
-            //     }
-            // }
-
-            // One Straight Source
-            $numberingData = DB::connection("mysql_nds")->table("year_sequence")->selectRaw("year_sequence.*, year_sequence.id_year_sequence no_cut_size")->where("id_year_sequence", $numberingInput)->first();
-
-            if ($numberingData) {
-                $this->sizeInput = $numberingData->so_det_id;
-                $this->sizeInputText = $numberingData->size;
-                $this->noCutInput = $numberingData->no_cut_size;
-                $this->numberingInput = $numberingInput;
-
-                if (!$this->sizeInput) {
-                    return $this->emit('alert', 'error', "QR belum terdaftar.");
-                }
-
-                $validatedData = $this->validate();
-
-                if ($this->checkIfNumberingExists($numberingInput)) {
-                    return;
-                }
-
-                // Check Secondary IN
-                $secondaryInData = SewingSecondaryIn::where("kode_numbering", $numberingInput)->first();
-
-                // Stored Secondary IN Data
-                $scannedDetail = $secondaryInData->rft;
-
-                if ($secondaryInData) {
-
-                    if ($secondaryInData->secondary_id == $this->selectedSecondary) {
-                        $insertRft = SewingSecondaryOut::create([
-                            'kode_numbering' => $secondaryInData->kode_numbering,
-                            'secondary_in_id' => $secondaryInData->id,
-                            'status' => 'rft',
-                            'created_by' => Auth::user()->line_id,
-                            'created_by_username' => Auth::user()->username,
-                            'created_at' => Carbon::now(),
-                            'updated_at' => Carbon::now(),
-                        ]);
-
-                        if ($insertRft) {
-                            $this->emit('alert', 'success', "1 output berukuran ".$this->sizeInputText." berhasil terekam.");
-
-                            // Stored Secondary IN Data
-                            $scannedDetail = $secondaryInData->rft;
-
-                            if ($scannedDetail) {
-                                $this->worksheetRft = $scannedDetail->soDet->so->actCosting->kpno;
-                                $this->styleRft = $scannedDetail->soDet->so->actCosting->styleno;
-                                $this->colorRft = $scannedDetail->soDet->color;
-                                $this->sizeRft = $scannedDetail->soDet->size;
-                                $this->kodeRft = $scannedDetail->kode_numbering;
-                                $this->lineRft = $scannedDetail->userSbWip->userPassword->username;
-                            }
-
-                            // Clear
-                            $this->sizeInput = '';
-                            $this->sizeInputText = '';
-                            $this->noCutInput = '';
-                            $this->numberingInput = '';
-                        } else {
-                            $this->emit('alert', 'error', "Terjadi kesalahan. Output tidak berhasil direkam.");
-                        }
-                    } else {
-                        $this->emit('alert', 'error', "Secondary IN tidak ditemukan di ".$this->selectedSecondaryText);
-                    }
-
-                } else {
-                    $this->emit('alert', 'error', "Terjadi kesalahan. QR tidak ditemukan di Secondary IN.");
-                }
-            } else {
-                $this->emit('alert', 'error', "QR tidak ditemukan.");
-            }
-        } else {
-            $this->emit('alert', 'error', "QR tidak valid.");
-        }
-    }
-
-    public function pushRapidRft($numberingInput, $sizeInput, $sizeInputText) {
-        $exist = false;
-
-        if (count($this->rapidRft) < 100) {
-            foreach ($this->rapidRft as $item) {
-                if (($numberingInput && $item['numberingInput'] == $numberingInput)) {
-                    $exist = true;
-                }
-            }
-
-            if (!$exist) {
-                if ($numberingInput) {
-                    $this->rapidRftCount += 1;
-
-                    array_push($this->rapidRft, [
-                        'numberingInput' => $numberingInput,
-                    ]);
-                }
-            }
-        } else {
-            $this->emit('alert', 'error', "Anda sudah mencapai batas rapid scan. Harap klik selesai dahulu.");
-        }
-    }
-
-    public function submitRapidInput() {
-        $rapidRftFiltered = [];
-        $success = 0;
-        $fail = 0;
-
-        if ($this->rapidRft && count($this->rapidRft) > 0) {
-            for ($i = 0; $i < count($this->rapidRft); $i++) {
-                // if (str_contains($this->rapidRft[$i]['numberingInput'], 'WIP')) {
-                //     $numberingData = DB::connection("mysql_nds")->table("stocker_numbering")->where("kode", $this->rapidRft[$i]['numberingInput'])->first();
-                // } else {
-                //     $numberingCodes = explode('_', $this->rapidRft[$i]['numberingInput']);
-
-                //     if (count($numberingCodes) > 2) {
-                //         $this->rapidRft[$i]['numberingInput'] = substr($numberingCodes[0],0,4)."_".$numberingCodes[1]."_".$numberingCodes[2];
-                //         $numberingData = DB::connection("mysql_nds")->table("year_sequence")->selectRaw("year_sequence.*, year_sequence.id_year_sequence no_cut_size")->where("id_year_sequence", $this->rapidRft[$i]['numberingInput'])->first();
-                //     } else {
-                //         $numberingData = DB::connection("mysql_nds")->table("month_count")->selectRaw("month_count.*, month_count.id_month_year no_cut_size")->where("id_month_year", $this->rapidRft[$i]['numberingInput'])->first();
-                //     }
-                // }
-
-                // One Straight Source
-                $numberingData = DB::connection("mysql_nds")->table("year_sequence")->selectRaw("year_sequence.*, year_sequence.id_year_sequence no_cut_size")->where("id_year_sequence", $this->rapidRft[$i]['numberingInput'])->first();
-
-                // Check Secondary IN
-                $secondaryInData = DB::connection('mysql_sb')->table('output_secondary_in')->where("kode_numbering", $this->rapidRft[$i]['numberingInput'])->first();
-
-                if ($secondaryInData && (/*Check Secondary OUT*/(DB::connection("mysql_sb")->table("output_secondary_out")->where('kode_numbering', $this->rapidRft[$i]['numberingInput'])->count() < 1))) {
-                    array_push($rapidRftFiltered, [
-                        'kode_numbering' => $secondaryInData->kode_numbering,
-                        'secondary_in_id' => $secondaryInData->id,
-                        'status' => 'rft',
-                        'created_by' => Auth::user()->line_id,
-                        'created_by_username' => Auth::user()->username,
-                        'created_at' => Carbon::now(),
-                        'updated_at' => Carbon::now(),
-                    ]);
-
-                    $success += 1;
-                } else {
-                    $fail += 1;
-                }
-            }
-        }
-
-        $rapidRftInsert = RftModel::insert($rapidRftFiltered);
-
-        if ($success > 0) {
-            $this->emit('alert', 'success', $success." output berhasil terekam. ");
-        }
-
-        if ($fail > 0) {
-            $this->emit('alert', 'error', $fail." output gagal terekam. ");
-        }
-
-        $this->rapidRft = [];
-        $this->rapidRftCount = 0;
-    }
-
-    public function setAndSubmitInput($scannedNumbering, $scannedSize, $scannedSizeText) {
-        $this->numberingInput = $scannedNumbering;
-        $this->sizeInput = $scannedSize;
-        $this->sizeInputText = $scannedSizeText;
-
-        $this->submitInput($scannedNumbering);
     }
 
     public function updateSelectedSecondary($selectedSecondary) {
@@ -306,6 +133,23 @@ class Rft extends Component
 
     public function render(SessionManager $session)
     {
+        $this->lines = UserPassword::where("Groupp", "SEWING")->orderBy("line_id", "asc")->get();
+
+        $this->orders = DB::connection('mysql_sb')->
+            table('act_costing')->
+            selectRaw('
+                id as id_ws,
+                kpno as no_ws,
+                styleno as style
+            ')->
+            where('status', '!=', 'CANCEL')->
+            where('cost_date', '>=', '2023-01-01')->
+            where('type_ws', 'STD')->
+            orderBy('cost_date', 'desc')->
+            orderBy('kpno', 'asc')->
+            groupBy('kpno')->
+            get();
+
         // if (isset($this->errorBag->messages()['numberingInput']) && collect($this->errorBag->messages()['numberingInput'])->contains(function ($message) {return Str::contains($message, 'Kode QR sudah discan');})) {
         //     foreach ($this->errorBag->messages()['numberingInput'] as $message) {
         //         $this->emit('alert', 'warning', $message);

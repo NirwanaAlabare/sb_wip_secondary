@@ -61,6 +61,8 @@ Route::middleware('auth')->group(function () {
     });
 
     Route::controller(SecondaryOutController::class)->prefix('secondary-out')->middleware("role:out")->group(function () {
+        Route::get('/get-secondary-in-wip-total', 'getSecondaryInWipTotal')->name('get-secondary-in-wip-total');
+
         Route::get('/get-secondary-out-list', 'getSecondaryOutList')->name("out-get-secondary-out-list");
         Route::get('/get-secondary-out-log', 'getSecondaryOutLog')->name("out-get-secondary-out-log");
         Route::get('/get-secondary-out-total', 'getSecondaryOutTotal')->name("out-get-secondary-out-total");
@@ -68,6 +70,12 @@ Route::middleware('auth')->group(function () {
         Route::get('/get-secondary-in-out-daily', 'getSecondaryInOutDaily')->name("out-get-secondary-in-out-daily");
         Route::get('/get-secondary-in-out-detail', 'getSecondaryInOutDetail')->name("out-get-secondary-in-out-detail");
         Route::get('/get-secondary-in-out-detail-total', 'getSecondaryInOutDetailTotal')->name("out-get-secondary-in-out-detail-total");
+
+        Route::post('/submit-secondary-out/rft', 'submitSecondaryOutRft')->name("out-submit-secondary-out-rft");
+        Route::post('/submit-secondary-out/defect', 'submitSecondaryOutDefect')->name("out-submit-secondary-out-defect");
+        Route::post('/submit-secondary-out/rework', 'submitSecondaryOutRework')->name("out-submit-secondary-out-rework");
+        Route::post('/submit-secondary-out/reject', 'submitSecondaryOutReject')->name("out-submit-secondary-out-reject");
+        Route::post('/submit-secondary-out/reject-defect', 'submitSecondaryOutRejectDefect')->name("out-submit-secondary-out-reject-defect");
 
         Route::post('/export-secondary-in-out', 'exportSecondaryInOut')->name("out-export-secondary-in-out");
     });

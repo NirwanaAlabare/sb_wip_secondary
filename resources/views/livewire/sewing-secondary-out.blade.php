@@ -137,7 +137,6 @@
                                     <thead>
                                         <tr>
                                             <th>Time OUT</th>
-                                            <th>QR</th>
                                             <th>Line</th>
                                             <th>No. WS</th>
                                             <th>Style</th>
@@ -319,6 +318,108 @@
             });
         }
 
+        function updateColorList(suffix = '') {
+            let selectElement = document.getElementById("color"+suffix);
+
+            if (selectElement) {
+                selectElement.innerHTML = null;
+
+                $.ajax({
+                    type: "get",
+                    url: "{{ route('get-color') }}",
+                    data: {
+                        "worksheet": $("#worksheet"+suffix).val()
+                    },
+                    dataType: "json",
+                    success: function (response)  {
+                        console.log(response);
+
+                        if (response && response.length > 0) {
+                            let initOption = document.createElement("option");
+                            initOption.value = "";
+                            initOption.text = "Pilih Color";
+
+                            if (selectElement) {
+                                selectElement.appendChild(initOption);
+
+                                response.forEach(item => {
+                                    let option = document.createElement("option");
+                                    option.value = item.color;
+                                    option.text = item.color;
+
+                                    selectElement.appendChild(option);
+
+                                    console.log(item);
+                                });
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        function updateSizeList(suffix = '') {
+            let selectElement = document.getElementById("size"+suffix);
+
+            if (selectElement) {
+                selectElement.innerHTML = null;
+
+                $.ajax({
+                    type: "get",
+                    url: "{{ route('get-size') }}",
+                    data: {
+                        "worksheet": $("#worksheet"+suffix).val(),
+                        "color": $("#color"+suffix).val(),
+                    },
+                    dataType: "json",
+                    success: function (response)  {
+                        console.log(response);
+
+                        if (response && response.length > 0) {
+                            let initOption = document.createElement("option");
+                            initOption.value = "";
+                            initOption.text = "Pilih Size";
+
+                            if (selectElement) {
+                                selectElement.appendChild(initOption);
+
+                                response.forEach(item => {
+                                    let option = document.createElement("option");
+                                    option.value = item.size;
+                                    option.text = item.size;
+
+                                    selectElement.appendChild(option);
+
+                                    console.log(item);
+                                });
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        function updateSecondaryInQty(suffix = '') {
+            $.ajax({
+                type: "get",
+                url: "{{ route('get-secondary-in-wip-total') }}",
+                data: {
+                    "selectedSecondary": $("#selectedSecondary").val(),
+                    "worksheet": $("#worksheet"+suffix).val(),
+                    "color": $("#color"+suffix).val(),
+                    "size": $("#size"+suffix).val(),
+                    "sewingLine" : $("#sewingLine"+suffix).val(),
+                },
+                success: function (response) {
+                    console.log(response);
+                    $("#secondaryInQty"+suffix).val(response);
+                },
+                error: function (jqXHR) {
+                    console.error(jqXHR);
+                }
+            });
+        }
+
         function defectInCheck(element) {
             Livewire.emit("loadingStart");
 
@@ -455,9 +556,6 @@
             columns: [
                 {
                     data: 'time_out',
-                },
-                {
-                    data: 'kode_numbering',
                 },
                 {
                     data: 'sewing_line',
