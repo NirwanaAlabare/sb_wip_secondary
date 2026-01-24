@@ -102,7 +102,7 @@
                             </div>
                         </div>
                         <div class="col-md-6">
-                            <div class="d-flex mb-3 gap-1">
+                            <div class="d-flex justify-content-evenly mb-3 gap-1">
                                 <div class="w-auto">
                                     <label class="form-label fw-bold">RFT</label>
                                     <input type="text" class="form-control" id="secondaryInOutDetailRft" readonly>
@@ -625,7 +625,7 @@
                     }
                 },
                 {
-                    targets: [10],
+                    targets: [9],
                     render: (data, type, row, meta) => {
                         return `<button class="btn btn-dark" onclick="onShowDefectAreaImage('` + row.gambar + `', ` + row.defect_area_x + `, ` + row.defect_area_y + `)"><i class="fa fa-image"></i></button>`
                     }
