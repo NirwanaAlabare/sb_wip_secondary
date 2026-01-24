@@ -229,7 +229,7 @@ class SecondaryOutController extends Controller
                 SUM(CASE WHEN output_secondary_out.status = 'defect' THEN 1 ELSE 0 END) total_defect,
                 SUM(CASE WHEN output_secondary_out.status = 'reject' THEN 1 ELSE 0 END) total_reject,
                 SUM(CASE WHEN output_secondary_out.status = 'rework' THEN 1 ELSE 0 END) total_rework,
-                SUM(CASE WHEN output_secondary_out.id IS NOT NULL THEN 1 ELSE 0 END) total_process
+                SUM(CASE WHEN output_secondary_out.id IS NULL THEN 1 ELSE 0 END) total_process
             ")->
             leftJoin("output_secondary_out", "output_secondary_out.secondary_in_id", "=", "output_secondary_in.id")->
             leftJoin("output_secondary_master", "output_secondary_master.id", "=", "output_secondary_in.secondary_id")->
