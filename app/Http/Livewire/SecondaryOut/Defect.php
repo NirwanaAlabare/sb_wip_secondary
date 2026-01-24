@@ -6,6 +6,7 @@ use Livewire\Component;
 use Livewire\WithFileUploads;
 use Illuminate\Session\SessionManager;
 use Illuminate\Support\Facades\Auth;
+use App\Models\SignalBit\UserPassword;
 use App\Models\SignalBit\MasterPlan;
 use App\Models\SignalBit\ProductType;
 use App\Models\SignalBit\Defect as DefectModel;
@@ -24,6 +25,11 @@ use DB;
 class Defect extends Component
 {
     use WithFileUploads;
+
+    public $lines;
+    public $orders;
+
+    public $outputInput;
 
     public $worksheetDefect;
     public $styleDefect;
@@ -104,6 +110,11 @@ class Defect extends Component
 
     public function mount(SessionManager $session, $selectedSecondary)
     {
+        $this->lines = null;
+        $this->orders = null;
+
+        $this->outputInput = 0;
+
         $this->worksheetDefect = null;
         $this->styleDefect = null;
         $this->colorDefect = null;
@@ -244,280 +255,6 @@ class Defect extends Component
         $this->defectAreaPositionY = $y;
     }
 
-    public function preSubmitInput($value)
-    {
-        $this->emit('qrInputFocus', 'defect');
-
-        $numberingInput = $value;
-
-        if ($numberingInput) {
-            // if (str_contains($numberingInput, 'WIP')) {
-            //     $numberingData = DB::connection("mysql_nds")->table("stocker_numbering")->where("kode", $numberingInput)->first();
-            // } else {
-            //     $numberingCodes = explode('_', $numberingInput);
-
-            //     if (count($numberingCodes) > 2) {
-            //         $numberingInput = substr($numberingCodes[0],0,4)."_".$numberingCodes[1]."_".$numberingCodes[2];
-            //         $numberingData = DB::connection("mysql_nds")->table("year_sequence")->selectRaw("year_sequence.*, year_sequence.id_year_sequence no_cut_size")->where("id_year_sequence", $numberingInput)->first();
-            //     } else {
-            //         $numberingData = DB::connection("mysql_nds")->table("month_count")->selectRaw("month_count.*, month_count.id_month_year no_cut_size")->where("id_month_year", $numberingInput)->first();
-            //     }
-            // }
-
-            // One Straight Source
-            $numberingData = DB::connection("mysql_nds")->table("year_sequence")->selectRaw("year_sequence.*, year_sequence.id_year_sequence no_cut_size")->where("id_year_sequence", $numberingInput)->first();
-
-            if ($numberingData) {
-                $this->sizeInput = $numberingData->so_det_id;
-                $this->sizeInputText = $numberingData->size;
-                $this->noCutInput = $numberingData->no_cut_size;
-                $this->numberingInput = $numberingInput;
-            }
-
-            if (!$this->sizeInput) {
-                return $this->emit('alert', 'error', "QR belum terdaftar.");
-            }
-
-            $validation = Validator::make([
-                'sizeInput' => $this->sizeInput,
-                'noCutInput' => $this->noCutInput,
-                'numberingInput' => $numberingInput
-            ], [
-                'sizeInput' => 'required',
-                'noCutInput' => 'required',
-                'numberingInput' => 'required'
-            ], [
-                'sizeInput.required' => 'Harap scan qr.',
-                'noCutInput.required' => 'Harap scan qr.',
-                'numberingInput.required' => 'Harap scan qr.'
-            ]);
-
-            if ($this->checkIfNumberingExists($numberingInput)) {
-                return;
-            }
-
-            if ($validation->fails()) {
-                $this->emit('qrInputFocus', 'defect');
-
-                $validation->validate();
-            } else {
-                $this->emit('clearSelectDefectAreaPoint');
-
-                $this->defectType = null;
-                $this->defectArea = null;
-                $this->productType = null;
-                $this->defectAreaPositionX = null;
-                $this->defectAreaPositionY = null;
-
-                $this->numberingInput = $numberingInput;
-
-                $this->validateOnly('sizeInput');
-
-                // Get Secondary IN Data
-                $secondaryInData = SewingSecondaryIn::where("kode_numbering", $this->numberingInput)->first();
-
-                if ($secondaryInData) {
-
-                    if ($secondaryInData->secondary_id == $this->selectedSecondary) {
-                        // Show Secondary IN Data
-                        $scannedDetail = $secondaryInData->rft;
-
-                        if ($scannedDetail) {
-                            $this->worksheetDefect = $scannedDetail->soDet->so->actCosting->kpno;
-                            $this->styleDefect = $scannedDetail->soDet->so->actCosting->styleno;
-                            $this->colorDefect = $scannedDetail->soDet->color;
-                            $this->sizeDefect = $scannedDetail->soDet->size;
-                            $this->kodeDefect = $scannedDetail->kode_numbering;
-                            $this->lineDefect = $scannedDetail->userSbWip->userPassword->username;
-                        } else {
-                            $this->emit('qrInputFocus', 'defect');
-
-                            $this->emit('alert', 'error', "Terjadi kesalahan. QR tidak sesuai.");
-                        }
-                    } else {
-                        $this->emit('alert', 'error', "Secondary IN tidak ditemukan di ".$this->selectedSecondaryText);
-                    }
-
-                }
-            }
-        }
-    }
-
-    public function submitInput(SessionManager $session)
-    {
-        $validatedData = $this->validate();
-
-        if ($this->checkIfNumberingExists($validatedData["numberingInput"])){
-            return;
-        }
-
-        if ($validatedData["numberingInput"]) {
-            // Get QR Data
-            $numberingData = DB::connection("mysql_nds")->table("year_sequence")->selectRaw("year_sequence.*, year_sequence.id_year_sequence no_cut_size")->where("id_year_sequence", $validatedData["numberingInput"])->first();
-
-            if ($numberingData) {
-
-                // Get Secondary IN Data
-                $secondaryInData = DB::connection('mysql_sb')->table('output_secondary_in')->where("kode_numbering", $validatedData["numberingInput"])->first();
-
-                if ($secondaryInData) {
-
-                    if ($secondaryInData->secondary_id == $this->selectedSecondary) {
-
-                        // Create Secondary Out Defect
-                        $insertDefect = SewingSecondaryOut::create([
-                            'kode_numbering' => $secondaryInData->kode_numbering,
-                            'secondary_in_id' => $secondaryInData->id,
-                            'status' => 'defect',
-                            'created_at' => Carbon::now(),
-                            'updated_at' => Carbon::now(),
-                            'created_by' => Auth::user()->line_id,
-                            'created_by_username' => Auth::user()->username
-                        ]);
-
-                        if ($insertDefect) {
-                            // Create Secondary Out Defect Detail
-                            $insertDefectDetail = SewingSecondaryOutDefect::create([
-                                'kode_numbering' => $secondaryInData->kode_numbering,
-                                'secondary_out_id' => $insertDefect->id,
-                                'defect_type_id' => $validatedData['defectType'],
-                                'defect_area_id' => $validatedData['defectArea'],
-                                'defect_area_x' => $validatedData['defectAreaPositionX'],
-                                'defect_area_y' => $validatedData['defectAreaPositionY'],
-                                'created_by' => Auth::user()->line_id,
-                                'created_by_username' => Auth::user()->username,
-                                'status' => 'defect',
-                            ]);
-
-                            $type = DefectType::select('defect_type')->find($this->defectType);
-                            $area = DefectArea::select('defect_area')->find($this->defectArea);
-                            $getSize = DB::table('so_det')
-                                ->select('id', 'size')
-                                ->where('id', $this->sizeInput)
-                                ->first();
-
-                            $this->emit('alert', 'success', "1 output DEFECT berukuran ".$getSize->size." dengan jenis defect : ".$type->defect_type." dan area defect : ".$area->defect_area." berhasil terekam.");
-                            $this->emit('hideModal', 'defect', 'regular');
-
-                            $this->sizeInput = '';
-                            $this->sizeInputText = '';
-                            $this->noCutInput = '';
-                            $this->numberingInput = '';
-                        } else {
-                            $this->emit('alert', 'error', "Terjadi kesalahan. Output tidak berhasil direkam.");
-                        }
-
-                        $this->emit('qrInputFocus', 'defect');
-
-                    } else {
-                        $this->emit('alert', 'error', "Secondary IN tidak ditemukan di ".$this->selectedSecondary);
-                    }
-                }
-            } else {
-                $this->emit('alert', 'error', "Terjadi kesalahan. QR tidak sesuai.");
-            }
-        } else {
-            $this->emit('alert', 'error', "Terjadi kesalahan. QR tidak sesuai.");
-        }
-    }
-
-    public function setAndSubmitInput($scannedNumbering, $scannedSize, $scannedSizeText, $scannedNoCut)
-    {
-        $this->numberingInput = $scannedNumbering;
-        $this->sizeInput = $scannedSize;
-        $this->sizeInputText = $scannedSizeText;
-        $this->noCutInput = $scannedNoCut;
-
-        $this->preSubmitInput($scannedNumbering);
-    }
-
-    public function pushRapidDefect($numberingInput, $sizeInput, $sizeInputText)
-    {
-        $exist = false;
-
-        if (count($this->rapidDefect) < 100) {
-            foreach ($this->rapidDefect as $item) {
-                if (($numberingInput && $item['numberingInput'] == $numberingInput)) {
-                    $exist = true;
-                } else {
-                    // if (str_contains($numberingInput, 'WIP')) {
-                    //     $numberingData = DB::connection('mysql_nds')->table('stocker_numbering')->where("kode", $numberingInput)->first();
-                    // } else {
-                    //     $numberingCodes = explode('_', $numberingInput);
-
-                    //     if (count($numberingCodes) > 2) {
-                    //         $numberingInput = substr($numberingCodes[0],0,4)."_".$numberingCodes[1]."_".$numberingCodes[2];
-                    //         $numberingData = DB::connection("mysql_nds")->table("year_sequence")->selectRaw("year_sequence.*, year_sequence.id_year_sequence no_cut_size")->where("id_year_sequence", $numberingInput)->first();
-                    //     } else {
-                    //         $numberingData = DB::connection("mysql_nds")->table("month_count")->selectRaw("month_count.*, month_count.id_month_year no_cut_size")->where("id_month_year", $numberingInput)->first();
-                    //     }
-                    // }
-
-                    // One Straight Format
-                    $numberingData = DB::connection("mysql_nds")->table("year_sequence")->selectRaw("year_sequence.*, year_sequence.id_year_sequence no_cut_size")->where("id_year_sequence", $numberingInput)->first();
-
-                    if ($numberingData) {
-                        if ($item['masterPlanId'] && $item['masterPlanId'] != $this->orderWsDetailSizes->where("so_det_id", $numberingData->so_det_id)->first()['master_plan_id']) {
-                            $exist = true;
-                        }
-                    }
-                }
-            }
-
-            if (!$exist) {
-                $this->rapidDefectCount += 1;
-
-                if ($numberingInput) {
-                    // if (str_contains($numberingInput, 'WIP')) {
-                    //     $numberingData = DB::connection('mysql_nds')->table('stocker_numbering')->where("kode", $numberingInput)->first();
-                    // } else {
-                    //     $numberingCodes = explode('_', $numberingInput);
-
-                    //     if (count($numberingCodes) > 2) {
-                    //         $numberingInput = substr($numberingCodes[0],0,4)."_".$numberingCodes[1]."_".$numberingCodes[2];
-                    //         $numberingData = DB::connection("mysql_nds")->table("year_sequence")->selectRaw("year_sequence.*, year_sequence.id_year_sequence no_cut_size")->where("id_year_sequence", $numberingInput)->first();
-                    //     } else {
-                    //         $numberingData = DB::connection("mysql_nds")->table("month_count")->selectRaw("month_count.*, month_count.id_month_year no_cut_size")->where("id_month_year", $numberingInput)->first();
-                    //     }
-                    // }
-
-                    // One Straight Format
-                    $numberingData = DB::connection("mysql_nds")->table("year_sequence")->selectRaw("year_sequence.*, year_sequence.id_year_sequence no_cut_size")->where("id_year_sequence", $numberingInput)->first();
-
-                    if ($numberingData) {
-                        $sizeInput = $numberingData->so_det_id;
-                        $sizeInputText = $numberingData->size;
-                        $noCutInput = $numberingData->no_cut_size;
-                        $masterPlanId = $this->orderWsDetailSizes->where("so_det_id", $sizeInput)->first() ? $this->orderWsDetailSizes->where("so_det_id", $sizeInput)->first()['master_plan_id'] : null;
-
-                        array_push($this->rapidDefect, [
-                            'numberingInput' => $numberingInput,
-                            'sizeInput' => $sizeInput,
-                            'sizeInputText' => $sizeInputText,
-                            'noCutInput' => $noCutInput,
-                            'masterPlanId' => $masterPlanId
-                        ]);
-                    }
-                }
-
-                $this->sizeInput = $sizeInput;
-            }
-        } else {
-            $this->emit('alert', 'error', "Anda sudah mencapai batas rapid scan. Harap klik selesai dahulu.");
-        }
-    }
-
-    public function preSubmitRapidInput()
-    {
-        $this->defectType = null;
-        $this->defectArea = null;
-        $this->productType = null;
-        $this->defectAreaPositionX = null;
-        $this->defectAreaPositionY = null;
-
-        $this->emit('showModal', 'defect', 'rapid');
-    }
-
     public function clearForm() {
         $this->worksheetDefect = "";
         $this->styleDefect = "";
@@ -527,61 +264,18 @@ class Defect extends Component
         $this->lineDefect = "";
     }
 
-    public function submitRapidInput() {
-        $rapidDefectFiltered = [];
-        $success = 0;
-        $fail = 0;
+    public function outputIncrement()
+    {
+        $this->outputInput++;
+    }
 
-        if ($this->rapidDefect && count($this->rapidDefect) > 0) {
-            for ($i = 0; $i < count($this->rapidDefect); $i++) {
-
-                $secondaryInData = DB::connection('mysql_sb')->table('output_secondary_in')->where("kode_numbering", $this->rapidDefect[$i]['numberingInput'])->first();
-
-                if ($secondaryInData && ((DB::connection("mysql_sb")->table("output_secondary_out")->where('kode_numbering', $this->rapidDefect[$i]['numberingInput'])->count() < 1))) {
-
-                    $createSecondaryOut = SewingSecondaryOut::create([
-                        'kode_numbering' => $this->rapidDefect[$i]['numberingInput'],
-                        'secondary_in_id' => $secondaryInData->id,
-                        'status' => 'defect',
-                        'created_by' => Auth::user()->line_id,
-                        'created_by_username' => Auth::user()->username,
-                    ]);
-
-                    array_push($rapidDefectFiltered, [
-                        'kode_numbering' => $this->rapidDefect[$i]['numberingInput'],
-                        'secondary_out_id' => $createSecondaryOut->id,
-                        'defect_type_id' => $this->defectType,
-                        'defect_area_id' => $this->defectArea,
-                        'defect_area_x' => $this->defectAreaPositionX,
-                        'defect_area_y' => $this->defectAreaPositionY,
-                        'created_by' => Auth::user()->line_id,
-                        'created_by_username' => Auth::user()->username,
-                        'status' => 'defect'
-                    ]);
-
-                    $success += 1;
-                } else {
-                    $fail += 1;
-                }
-            }
+    public function outputDecrement()
+    {
+        if (($this->outputInput-1) < 1) {
+            $this->emit('alert', 'warning', "Kuantitas output tidak bisa kurang dari 1.");
+        } else {
+            $this->outputInput--;
         }
-
-        $rapidDefectInsert = SewingSecondaryOutDefect::insert($rapidDefectFiltered);
-
-        if ($success > 0) {
-            $this->emit('alert', 'success', $success." output berhasil terekam. ");
-
-            $this->emit('triggerDashboard', Auth::user()->line->username, Carbon::now()->format('Y-m-d'));
-        }
-
-        if ($fail > 0) {
-            $this->emit('alert', 'error', $fail." output gagal terekam.");
-        }
-
-        $this->emit('hideModal', 'defect', 'rapid');
-
-        $this->rapidDefect = [];
-        $this->rapidDefectCount = 0;
     }
 
     public function updateSelectedSecondary($selectedSecondary) {
@@ -596,6 +290,23 @@ class Defect extends Component
 
     public function render(SessionManager $session)
     {
+        $this->lines = UserPassword::where("Groupp", "SEWING")->orderBy("line_id", "asc")->get();
+
+        $this->orders = DB::connection('mysql_sb')->
+            table('act_costing')->
+            selectRaw('
+                id as id_ws,
+                kpno as no_ws,
+                styleno as style
+            ')->
+            where('status', '!=', 'CANCEL')->
+            where('cost_date', '>=', '2023-01-01')->
+            where('type_ws', 'STD')->
+            orderBy('cost_date', 'desc')->
+            orderBy('kpno', 'asc')->
+            groupBy('kpno')->
+            get();
+
         // if (isset($this->errorBag->messages()['numberingInput']) && collect($this->errorBag->messages()['numberingInput'])->contains(function ($message) {return Str::contains($message, 'Kode QR sudah discan');})) {
         //     foreach ($this->errorBag->messages()['numberingInput'] as $message) {
         //         $this->emit('alert', 'warning', $message);

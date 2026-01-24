@@ -1,5 +1,5 @@
 <div>
-    <div class="loading-container-fullscreen" wire:loading wire:target="selectDefectAreaPosition, setAndSubmitInput, preSubmitInput, submitInput, submitRapidInput">
+    <div class="loading-container-fullscreen" wire:loading wire:target="selectDefectAreaPosition">
         <div class="loading-container">
             <div class="loading"></div>
         </div>
@@ -8,8 +8,7 @@
         <div class="col-md-4">
             <div class="card h-100">
                 <div class="card-header d-flex justify-content-between align-items-center bg-defect text-light">
-                    <p class="mb-0 fs-5">Scan QR</p>
-                    {{-- <button class="btn btn-dark" wire:click="$emit('showModal', 'rapidDefect')"><i class="fa-solid fa-layer-group"></i></button> --}}
+                    <p class="mb-0 fs-5">Qty</p>
                 </div>
                 <div class="card-body" wire:ignore.self>
                     @error('numberingInput')
@@ -18,8 +17,11 @@
                             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                         </div>
                     @enderror
-                    {{-- <div id="defect-reader" width="600px"></div> --}}
-                    <input type="text" class="qty-input h-75" id="scannedDefectItem" name="scannedDefectItem">
+                    <input type="number" class="qty-input" id="defect-input" value="{{ $outputInput }}" wire:model.defer='outputInput'>
+                    <div class="d-flex justify-content-between gap-1 mt-3">
+                        <button class="btn btn-danger w-50 fs-3" id="decrement" wire:click="outputDecrement">-1</button>
+                        <button class="btn btn-success w-50 fs-3" id="increment" wire:click="outputIncrement">+1</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -46,9 +48,6 @@
                         <div class="d-flex align-items-center gap-3 me-3">
                             <p class="mb-1 fs-5">DEFECT</p>
                         </div>
-                        <button class="btn btn-dark" wire:click="$emit('preSubmitUndo', 'defect')" disabled>
-                            <i class="fa-regular fa-rotate-left"></i>
-                        </button>
                         {{-- <button class="btn btn-dark">
                             <i class="fa-regular fa-gear"></i>
                         </button> --}}
@@ -68,29 +67,51 @@
                         <div class="loading mx-auto"></div>
                     </div>
                     <div class="row h-100 row-gap-3" id="content-defect">
-                        <div class="col-md-6">
-                            <label class="form-label">Worksheet</label>
-                            <input type="text" class="form-control" id="worksheet-defect" wire:model="worksheetDefect" readonly>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Style</label>
-                            <input type="text" class="form-control" id="style-defect" wire:model="styleDefect" readonly>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Color</label>
-                            <input type="text" class="form-control" id="color-defect" wire:model="colorDefect" readonly>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Size</label>
-                            <input type="text" class="form-control" id="size-defect" wire:model="sizeDefect" readonly>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Kode QR</label>
-                            <input type="text" class="form-control" id="kode-defect" wire:model="kodeDefect" readonly>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Line</label>
-                            <input type="text" class="form-control" id="line-defect" wire:model="lineDefect" readonly>
+                        <div class="col-md-12">
+                            <div class="row g-3" wire:ignore>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Worksheet</label>
+                                    <select class="form-control select2" id="worksheetDefect" name="worksheet">
+                                        <option value="">Pilih Worksheet</option>
+                                        @if ($orders)
+                                            @foreach ($orders as $order)
+                                                <option value="{{ $order->id_ws }}" data-style="{{ $order->style }}">{{ $order->no_ws }}</option>
+                                            @endforeach
+                                        @endif
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Style</label>
+                                    <input type="text" class="form-control" id="styleDefect" name="style" readonly>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Color</label>
+                                    <select class="form-control select2" id="colorDefect" name="color">
+                                        <option value=""></option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Size</label>
+                                    <select class="form-control select2" id="sizeDefect" name="size">
+                                        <option value=""></option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Line</label>
+                                    <select class="form-control select2" id="sewingLineDefect" name="sewingLine">
+                                        <option value="">Pilih Line</option>
+                                        @if ($lines)
+                                            @foreach ($lines as $line)
+                                                <option value="{{ $line->username }}">{{ $line->username }}</option>
+                                            @endforeach
+                                        @endif
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">WIP Qty</label>
+                                    <input type="number" class="form-control" id="secondaryInQtyDefect" name="secondaryInQty" readonly>
+                                </div>
+                            </div>
                         </div>
                         <div class="col-md-6" wire:ignore>
                             @error('defectType')
@@ -105,7 +126,7 @@
                                 <button type="button" class="btn btn-sm btn-light rounded-0 me-1" wire:click="$emit('showModal', 'addDefectType')">
                                     <i class="fa-regular fa-plus fa-xs"></i>
                                 </button>
-                                <label class="form-label me-1 mb-0">Defect Type</label>
+                                <label class="form-label me-1 mb-0 fw-bold">Defect Type</label>
                             </div>
                             <div wire:ignore id="select-defect-type-container">
                                 <select class="form-select @error('defectType') is-invalid @enderror" id="defect-type-select2" wire:model='defectType'>
@@ -131,7 +152,7 @@
                                 <button type="button" class="btn btn-sm btn-light rounded-0 me-1" wire:click="$emit('showModal', 'addDefectArea')">
                                     <i class="fa-regular fa-plus fa-xs"></i>
                                 </button>
-                                <label class="form-label me-1 mb-0">Defect Area</label>
+                                <label class="form-label me-1 mb-0 fw-bold">Defect Area</label>
                             </div>
                             <div class="d-flex gap-1">
                                 <div class="w-75" wire:ignore id="select-defect-area-container">
@@ -172,20 +193,20 @@
                                     <div class="col d-flex justify-content-center align-items-center">
                                         <label class="form-label me-1 mb-1">Y </label>
                                         <div class="d-flex">
-                                            <input class="form-control @error('defectAreaPositionY') is-invalid @enderror" id="defect-area-position-x-livewire" wire:model='defectAreaPositionY' readonly>
+                                            <input class="form-control @error('defectAreaPositionY') is-invalid @enderror" id="defect-area-position-y-livewire" wire:model='defectAreaPositionY' readonly>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                        <div class="col-md-12">
+                        {{-- <div class="col-md-12">
                             <div class="d-flex justify-content-end gap-3">
                                 <button type="button" class="btn btn-danger" wire:click='clearForm'>Batal</button>
                                 <div id="regular-submit" wire:ignore.self>
                                     <button type="button" class="btn btn-success" wire:click='submitInput'>SIMPAN</button>
                                 </div>
                             </div>
-                        </div>
+                        </div> --}}
                     </div>
                 </div>
             </div>
@@ -202,7 +223,6 @@
                 <table class="table table-bordered w-100" id="defect-secondary-out-list-table">
                     <thead>
                         <tr>
-                            <th>Kode Numbering</th>
                             <th>No. WS</th>
                             <th>Style</th>
                             <th>Color</th>
@@ -340,33 +360,11 @@
         </div>
     </div>
 
-    {{-- Rapid Defect --}}
-    <div class="modal" tabindex="-1" id="rapid-defect-modal" wire:ignore.self>
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header bg-defect text-light">
-                    <h5 class="modal-title"><i class="fa-solid fa-clone"></i> Defect Rapid Scan</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <p class="text-center">Scanned Item : <b>{{ $rapidDefectCount }}</b></p>
-                        <input type="text" class="qty-input" id="rapid-defect-input">
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Batal</button>
-                    <button type="button" class="btn btn-success" data-bs-dismiss="modal" wire:click='preSubmitRapidInput'>Lanjut</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
     {{-- Footer --}}
     <footer class="footer fixed-bottom py-3">
         <div class="container-fluid">
             <div class="d-flex justify-content-end">
-                <button class="btn btn-dark btn-lg ms-auto fs-3" onclick="triggerSubmit()">LANJUT</button>
+                <button class="btn btn-dark btn-lg ms-auto fs-3" onclick="submitSecondaryDefect()">SIMPAN</button>
             </div>
         </div>
     </footer>
@@ -394,7 +392,7 @@
                 $('#defect-type-select2').val("").trigger('change');
                 $('#defect-area-select2').val("").trigger('change');
             });
-        })
+        });
 
         // On Livewire Render
         document.addEventListener('livewire:load', () => {
@@ -422,60 +420,85 @@
                     var defectArea = $('#defect-area-select2').select2("val");
                     @this.set('defectArea', defectArea);
                 });
-            })
-        })
-
-        // Scan QR
-        var scannedDefectItemInput = document.getElementById("scannedDefectItem");
-
-        scannedDefectItemInput.addEventListener("change", async function () {
-            const value = this.value;
-
-            this.setAttribute("disabled", true);
-
-            // submit
-            await @this.preSubmitInput(value);
-
-            this.removeAttribute("disabled");
-            this.value = '';
+            });
         });
-
-        var scannedRapidDefectInput = document.getElementById("rapid-defect-input");
-
-        scannedRapidDefectInput.addEventListener("change", function () {
-            @this.pushRapidDefect(this.value, null, null);
-
-            this.value = '';
-        });
-
-        Livewire.on('qrInputFocus', async (type) => {
-            if (type == 'defect') {
-                scannedDefectItemInput.focus();
-
-                defectSecondaryOutListReload()
-            }
-        });
-
-        Livewire.on('toInputPanel', async (type) => {
-            if (type == 'defect') {
-                scannedDefectItemInput.focus();
-            }
-        });
-
-        // Livewire.on('fromInputPanel', () => {
-        //     clearDefectScan();
-        // });
 
         $('#defect-area-modal').on('hidden.bs.modal', function () {
-            scannedDefectItemInput.focus();
+            defectInput.focus();
         })
 
-        function triggerSubmit() {
-            if ($("#scannedDefectItem").val()) {
-                $("#scannedDefectItem").trigger("change");
-            }
+        $("#worksheetDefect").on("change", function (event) {
+            let selectedOption = this.options[this.selectedIndex];
 
-            $("#scannedDefectItem").focus();
+            $("#styleDefect").val(selectedOption.getAttribute("data-style"));
+
+            updateColorList("Defect");
+        });
+
+        $("#colorDefect").on("change", function (event) {
+            updateSizeList("Defect");
+        });
+
+        $("#sizeDefect").on("change", function (event) {
+            updateSecondaryInQty("Defect");
+        });
+
+        $("#sewingLineDefect").on("change", function (event) {
+            updateSecondaryInQty("Defect");
+        });
+
+        function submitSecondaryDefect() {
+            document.getElementById("loading").classList.remove("d-none");
+
+            $.ajax({
+                type: "post",
+                url: "{{ route('out-submit-secondary-out-defect') }}",
+                data: {
+                    selectedSecondary: $("#selectedSecondary").val(),
+                    sewingLine : $("#sewingLineDefect").val(),
+                    worksheet : $("#worksheetDefect").val(),
+                    style : $("#styleDefect").val(),
+                    color : $("#colorDefect").val(),
+                    size : $("#sizeDefect").val(),
+                    qty : $("#defect-input").val(),
+                    defectType: $("#defect-type-select2").val(),
+                    defectArea: $("#defect-area-select2").val(),
+                    defectAreaPositionX: $("#defect-area-position-x-livewire").val(),
+                    defectAreaPositionY: $("#defect-area-position-y-livewire").val(),
+                },
+                dataType: "json",
+                success: function (response) {
+                    document.getElementById("loading").classList.add("d-none");
+
+                    if (response) {
+                        // Success
+                        if (response.success > 0) {
+                            showNotification("success", response.success+" defect berhasil disimpan.");
+                        }
+
+                        // fail
+                        if (response.fail > 0) {
+                            showNotification("error", response.fail+" defect gagal disimpan/tidak ditemukan.");
+                        }
+
+                        // exist
+                        if (response.exist > 0) {
+                            showNotification("warning", response.exist+" defect sudah ada .");
+                        }
+
+                        defectSecondaryOutListReload();
+
+                        updateSecondaryInQty("Defect");
+                    }
+                },
+                error: function (jqXHR) {
+                    document.getElementById("loading").classList.add("d-none");
+
+                    let res = jqXHR.responseJSON;
+
+                    showValidationError(res, 'Defect')
+                }
+            });
         }
 
         // DEFECT Secondary Out List
@@ -496,9 +519,6 @@
                 }
             },
             columns: [
-                {
-                    data: 'kode_numbering',
-                },
                 {
                     data: 'ws',
                 },
