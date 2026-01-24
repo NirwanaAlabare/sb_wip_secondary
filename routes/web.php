@@ -67,6 +67,9 @@ Route::middleware('auth')->group(function () {
         Route::get('/get-secondary-out-log', 'getSecondaryOutLog')->name("out-get-secondary-out-log");
         Route::get('/get-secondary-out-total', 'getSecondaryOutTotal')->name("out-get-secondary-out-total");
 
+        Route::get('/get-secondary-out-log-single', 'getSecondaryOutLogSingle')->name("out-get-secondary-out-log-single");
+        Route::get('/get-secondary-out-log-total', 'getSecondaryOutLogTotal')->name("out-get-secondary-out-log-total");
+
         Route::get('/get-secondary-in-out-daily', 'getSecondaryInOutDaily')->name("out-get-secondary-in-out-daily");
         Route::get('/get-secondary-in-out-detail', 'getSecondaryInOutDetail')->name("out-get-secondary-in-out-detail");
         Route::get('/get-secondary-in-out-detail-total', 'getSecondaryInOutDetailTotal')->name("out-get-secondary-in-out-detail-total");

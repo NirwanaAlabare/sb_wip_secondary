@@ -297,7 +297,7 @@
             paging: true,
             lengthChange: false,
             ajax: {
-                url: '{{ route('out-get-secondary-out-total') }}',
+                url: '{{ route('out-get-secondary-out-log-total') }}',
                 dataType: 'json',
                 data: function (d) {
                     d.date = $("#secondary-out-date").val();

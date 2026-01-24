@@ -540,6 +540,86 @@ class SecondaryOutController extends Controller
         return Datatables::of($log)->toJson();
     }
 
+    public function getSecondaryOutLogSingle(Request $request)
+    {
+        // Date filter
+        $date = $request->date ? $request->date : date("Y-m-d");
+
+        // Status filter
+        $status = $request->status;
+
+        // Selected Secondary Filter
+        $selectedSecondary = $request->selectedSecondary;
+
+        // Selected Order Filter
+        $additionalQuery = "";
+        if ($request->worksheet) {
+            $additionalQuery .= " and act_costing.id = '".$request->worksheet."' ";
+        }
+        if ($request->style) {
+            $additionalQuery .= " and act_costing.styleno = '".$request->style."' ";
+        }
+        if ($request->color) {
+            $additionalQuery .= " and so_det.color = '".$request->color."' ";
+        }
+        if ($request->size) {
+            $additionalQuery .= " and so_det.size = '".$request->size."' ";
+        }
+        if ($request->sewingLine) {
+            $additionalQuery .= " and userpassword.username = '".$request->sewingLine."' ";
+        }
+
+        $log = collect(DB::connection("mysql_sb")->select("
+            select
+                output_secondary_out.*,
+                output_secondary_in.kode_numbering,
+                act_costing.kpno ws,
+                act_costing.styleno style,
+                so_det.color,
+                so_det.size,
+                userpassword.username as sewing_line,
+                output_secondary_master.secondary,
+                defect_types.defect_type,
+                defect_areas.defect_area,
+                output_secondary_out_defect.defect_area_x,
+                output_secondary_out_defect.defect_area_y,
+                reject_types.defect_type as reject_type,
+                reject_areas.defect_area as reject_area,
+                output_secondary_out_reject.defect_area_x as reject_area_x,
+                output_secondary_out_reject.defect_area_y as reject_area_y,
+                output_secondary_out.created_by_username,
+                COALESCE(output_secondary_out.updated_at, output_secondary_out.created_at) as secondary_out_time,
+                master_plan.gambar
+            from
+                `output_secondary_out`
+                left join `output_secondary_out_defect` on `output_secondary_out_defect`.`secondary_out_id` = `output_secondary_out`.`id`
+                left join `output_secondary_out_reject` on `output_secondary_out_reject`.`secondary_out_id` = `output_secondary_out`.`id`
+                left join `output_defect_types` defect_types on `defect_types`.`id` = `output_secondary_out_defect`.`defect_type_id`
+                left join `output_defect_areas` defect_areas on `defect_areas`.`id` = `output_secondary_out_defect`.`defect_area_id`
+                left join `output_defect_types` reject_types on `reject_types`.`id` = `output_secondary_out_reject`.`defect_type_id`
+                left join `output_defect_areas` reject_areas on `reject_areas`.`id` = `output_secondary_out_reject`.`defect_area_id`
+                left join `output_secondary_in` on `output_secondary_in`.`id` = `output_secondary_out`.`secondary_in_id`
+                left join `output_secondary_master` on `output_secondary_master`.`id` = `output_secondary_in`.`secondary_id`
+                left join `output_rfts` on `output_rfts`.`id` = `output_secondary_in`.`rft_id`
+                left join `user_sb_wip` on `user_sb_wip`.`id` = `output_rfts`.`created_by`
+                left join `userpassword` on `userpassword`.`line_id` = `user_sb_wip`.`line_id`
+                left join `so_det` on `so_det`.`id` = `output_rfts`.`so_det_id`
+                left join `so` on `so`.`id` = `so_det`.`id_so`
+                left join `act_costing` on `act_costing`.`id` = `so`.`id_cost`
+                left join `master_plan` on `master_plan`.`id` = `output_rfts`.`master_plan_id`
+            where
+                output_secondary_out.kode_numbering is null
+                ".($status && $status == 'defect' ? "" : " and COALESCE(output_secondary_out.updated_at, output_secondary_out.created_at) between '".$date." 00:00:00' and '".$date." 23:59:59' ")."
+                ".($status ? " and output_secondary_out.status = '".$status."' " : "")."
+                ".($selectedSecondary ? " and output_secondary_in.secondary_id = '".$selectedSecondary."' " : "")."
+                ".($additionalQuery)."
+            group by
+                output_secondary_out.id
+        "));
+
+        return Datatables::of($log)->toJson();
+    }
+
     public function getSecondaryOutTotal(Request $request)
     {
         // Date filter
@@ -619,6 +699,31 @@ class SecondaryOutController extends Controller
             first();
 
         return $secondaryInOutputs ? $secondaryInOutputs->total_secondary_in_wip : 0;
+    }
+
+    public function getSecondaryOutLogTotal(Request $request) {
+        $secondaryOutOutputs = DB::connection("mysql_sb")->table("output_secondary_out")->selectRaw("
+                COUNT(output_secondary_out.id) total_secondary_out
+            ")->
+            leftJoin("output_secondary_in", "output_secondary_in.id", "=", "output_secondary_out.secondary_in_id")->
+            leftJoin("output_rfts", "output_rfts.id", "=", "output_secondary_in.rft_id")->
+            leftJoin("so_det", "so_det.id", "=", "output_rfts.so_det_id")->
+            leftJoin("so", "so.id", "=", "so_det.id_so")->
+            leftJoin("act_costing", "act_costing.id", "=", "so.id_cost")->
+            leftJoin("user_sb_wip", "user_sb_wip.id", "=", "output_rfts.created_by")->
+            leftJoin("userpassword", "userpassword.line_id", "=", "user_sb_wip.line_id")->
+            whereRaw("
+                output_rfts.kode_numbering is null and
+                output_secondary_out.id is not null and
+                act_costing.id = '".$request->worksheet."' and
+                so_det.color = '".$request->color."' and
+                so_det.size = '".$request->size."'
+                ".($request->status ? " and output_secondary_out.status = '".$request->status."' " : "")."
+                ".($request->sewingLine ? " and userpassword.username = '".$request->sewingLine."' " : "")."
+            ")->
+            first();
+
+        return $secondaryOutOutputs ? $secondaryOutOutputs->total_secondary_out : 0;
     }
 
     public function submitSecondaryOutRft(Request $request) {
@@ -835,36 +940,31 @@ class SecondaryOutController extends Controller
 
     public function submitSecondaryOutRework(Request $request) {
         $validatedRequest = $request->validate([
-            'selectedSecondary' => 'required',
-            'sewingLine' => 'required',
-            'worksheet' => 'required',
-            'color' => 'required',
-            'size' => 'required',
-            'qty' => 'required',
             'id' => 'required'
         ]);
 
-        // Get Secondary Out Defect Detail
-        $scannedDefectData = SewingSecondaryOutDefect::where("id", $id)->first();
+        $id = $validatedRequest["id"];
 
-        if ($scannedDefectData) {
+        // Get Secondary Out Defect Detail
+        $selectedSecondaryOut = SewingSecondaryOut::where("id", $id)->where("status", "defect")->first();
+
+        if ($selectedSecondaryOut) {
+            // Update Secondary Out Defect
+            $updateSecondaryOut = SewingSecondaryOut::where("id", $selectedSecondaryOut->id)->update([
+                "status" => "rework",
+            ]);
 
             // Update Secondary Out Defect Detail
-            $updateSecondaryOutDefect = SewingSecondaryOutDefect::where("id", $scannedDefectData->id)->update([
+            $updateSecondaryOutDefect = SewingSecondaryOutDefect::where("secondary_out_id", $selectedSecondaryOut->id)->update([
                 "status" => "reworked",
                 "reworked_by" => Auth::user()->line_id,
                 "reworked_by_username" => Auth::user()->username,
-                "reworked_at" => $now,
-            ]);
-
-            // Update Secondary Out Defect
-            $updateSecondaryOut = SewingSecondaryOut::where("id", $scannedDefectData->secondary_out_id)->update([
-                "status" => "rework",
+                "reworked_at" => Carbon::now(),
             ]);
 
             return array(
                 "status" => 200,
-                "message" => "Data defect "+$scannedDefectData->id+" berhasil di-rework",
+                "message" => "Data defect ".$selectedSecondaryOut->id." berhasil di-rework",
             );
         } else {
             return array(

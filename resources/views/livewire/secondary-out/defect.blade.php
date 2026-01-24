@@ -583,5 +583,9 @@
         function defectSecondaryOutListReload() {
             $("#defect-secondary-out-list-table").DataTable().ajax.reload();
         }
+
+        Livewire.on("updateSelectedSecondary", function () {
+            defectSecondaryOutListReload();
+        })
     </script>
 @endpush

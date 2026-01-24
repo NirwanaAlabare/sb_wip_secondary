@@ -6,6 +6,7 @@ use Livewire\Component;
 use Livewire\WithPagination;
 use Illuminate\Session\SessionManager;
 use Illuminate\Support\Facades\Auth;
+use App\Models\SignalBit\UserPassword;
 use App\Models\SignalBit\Reject as RejectModel;
 use App\Models\SignalBit\Rft;
 use App\Models\SignalBit\Defect;

@@ -420,6 +420,31 @@
             });
         }
 
+        function updateSecondaryOutQty(suffix = '', status = '', elementId  = '') {
+            $.ajax({
+                type: "get",
+                url: "{{ route('out-get-secondary-out-log-total') }}",
+                data: {
+                    "selectedSecondary": $("#selectedSecondary").val(),
+                    "worksheet": $("#worksheet"+suffix).val(),
+                    "color": $("#color"+suffix).val(),
+                    "size": $("#size"+suffix).val(),
+                    "sewingLine" : $("#sewingLine"+suffix).val(),
+                    "status": status
+                },
+                success: function (response) {
+                    console.log(response);
+
+                    if (elementId) {
+                        $('#'+elementId).val(response);
+                    }
+                },
+                error: function (jqXHR) {
+                    console.error(jqXHR);
+                }
+            });
+        }
+
         function defectInCheck(element) {
             Livewire.emit("loadingStart");
 
