@@ -35,13 +35,8 @@ class Defect extends Component
     public $styleDefect;
     public $colorDefect;
     public $sizeDefect;
-    public $kodeDefect;
     public $lineDefect;
 
-    public $sizeInput;
-    public $sizeInputText;
-    public $noCutInput;
-    public $numberingInput;
     public $defect;
 
     public $defectTypes;
@@ -60,17 +55,10 @@ class Defect extends Component
     public $defectAreaPositionX;
     public $defectAreaPositionY;
 
-    public $rapidDefect;
-    public $rapidDefectCount;
-
     public $selectedSecondary;
     public $selectedSecondaryText;
 
     protected $rules = [
-        'sizeInput' => 'required',
-        'noCutInput' => 'required',
-        'numberingInput' => 'required',
-        // 'productType' => 'required',
         'defectType' => 'required',
         'defectArea' => 'required',
         'defectAreaPositionX' => 'required',
@@ -78,35 +66,18 @@ class Defect extends Component
     ];
 
     protected $messages = [
-        'sizeInput.required' => 'Harap scan qr.',
-        'noCutInput.required' => 'Harap scan qr.',
-        'numberingInput.required' => 'Harap scan qr.',
-        // 'productType.required' => 'Harap tentukan tipe produk.',
         'defectType.required' => 'Harap tentukan jenis defect.',
         'defectArea.required' => 'Harap tentukan area defect.',
-        'defectAreaPositionX.required' => "Harap tentukan posisi defect area dengan mengklik tombol 'gambar' di samping 'select product type'.",
-        'defectAreaPositionY.required' => "Harap tentukan posisi defect area dengan mengklik tombol 'gambar' di samping 'select product type'.",
+        'defectAreaPositionX.required' => "Harap tentukan posisi defect area dengan mengklik tombol di samping 'select defect area'.",
+        'defectAreaPositionY.required' => "Harap tentukan posisi defect area dengan mengklik tombol di samping 'select defect area'.",
     ];
 
     protected $listeners = [
         'setDefectAreaPosition' => 'setDefectAreaPosition',
         'updateOutputDefect' => 'updateOutput',
-        'setAndSubmitInputDefect' => 'setAndSubmitInput',
         'toInputPanel' => 'resetError',
         'updateSelectedSecondary' => 'updateSelectedSecondary'
     ];
-
-    private function checkIfNumberingExists($numberingInput = null): bool
-    {
-        $currentData = DB::table('output_secondary_out')->where('kode_numbering', ($numberingInput ?? $this->numberingInput))->first();
-        if ($currentData) {
-            $this->addError('numberingInput', 'Kode QR sudah discan di '.strtoupper($currentData->status).'.');
-
-            return true;
-        }
-
-        return false;
-    }
 
     public function mount(SessionManager $session, $selectedSecondary)
     {
@@ -119,13 +90,7 @@ class Defect extends Component
         $this->styleDefect = null;
         $this->colorDefect = null;
         $this->sizeDefect = null;
-        $this->kodeDefect = null;
         $this->lineDefect = null;
-
-        $this->sizeInput = null;
-        $this->sizeInputText = null;
-        $this->noCutInput = null;
-        $this->numberingInput = null;
 
         $this->defectType = null;
         $this->defectArea = null;
@@ -164,6 +129,7 @@ class Defect extends Component
         ]);
     }
 
+    // Deprecated
     public function submitProductType()
     {
         if ($this->productTypeAdd && $this->productTypeImageAdd) {
@@ -188,6 +154,7 @@ class Defect extends Component
             $this->emit('alert', 'error', 'Harap tentukan nama tipe produk beserta gambarnya');
         }
     }
+    // End of Deprecated
 
     public function submitDefectType()
     {
@@ -228,18 +195,13 @@ class Defect extends Component
         }
     }
 
-    public function clearInput()
-    {
-        $this->sizeInput = '';
-    }
-
     public function selectDefectAreaPosition()
     {
         $masterPlan = DB::connection('mysql_sb')->table('output_secondary_in')->
             select("master_plan.gambar")->
             leftJoin("output_rfts", "output_rfts.id", "=", "output_secondary_in.rft_id")->
             leftJoin("master_plan", "master_plan.id", "=", "output_rfts.master_plan_id")->
-            where("output_secondary_in.kode_numbering", $this->numberingInput)->
+            where("master_plan.id_ws", $this->worksheetDefect)->
             first();
 
         if ($masterPlan) {
@@ -253,15 +215,6 @@ class Defect extends Component
     {
         $this->defectAreaPositionX = $x;
         $this->defectAreaPositionY = $y;
-    }
-
-    public function clearForm() {
-        $this->worksheetDefect = "";
-        $this->styleDefect = "";
-        $this->colorDefect = "";
-        $this->sizeDefect = "";
-        $this->kodeDefect = "";
-        $this->lineDefect = "";
     }
 
     public function outputIncrement()
@@ -306,19 +259,6 @@ class Defect extends Component
             orderBy('kpno', 'asc')->
             groupBy('kpno')->
             get();
-
-        // if (isset($this->errorBag->messages()['numberingInput']) && collect($this->errorBag->messages()['numberingInput'])->contains(function ($message) {return Str::contains($message, 'Kode QR sudah discan');})) {
-        //     foreach ($this->errorBag->messages()['numberingInput'] as $message) {
-        //         $this->emit('alert', 'warning', $message);
-        //     }
-        // } else if ((isset($this->errorBag->messages()['numberingInput']) && collect($this->errorBag->messages()['numberingInput'])->contains("Harap scan qr.")) || (isset($this->errorBag->messages()['sizeInput']) && collect($this->errorBag->messages()['sizeInput'])->contains("Harap scan qr."))) {
-        //     $this->emit('alert', 'error', "Harap scan QR.");
-        // }
-        if (isset($this->errorBag->messages()['numberingInput'])) {
-            foreach ($this->errorBag->messages()['numberingInput'] as $message) {
-                $this->emit('alert', 'error', $message);
-            }
-        }
 
         // Defect types
         $this->productTypes = ProductType::orderBy('product_type')->get();

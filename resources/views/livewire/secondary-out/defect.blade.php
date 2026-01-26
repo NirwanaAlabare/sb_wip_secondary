@@ -11,7 +11,7 @@
                     <p class="mb-0 fs-5">Qty</p>
                 </div>
                 <div class="card-body" wire:ignore.self>
-                    @error('numberingInput')
+                    @error('outputInput')
                         <div class="alert alert-danger alert-dismissible fade show mb-0 rounded-0" role="alert">
                             <strong>Error</strong> {{$message}}
                             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
@@ -26,6 +26,7 @@
             </div>
         </div>
         <div class="col-md-8">
+
             <div class="card h-100">
                 <div class="card-header d-flex justify-content-between align-items-center bg-defect text-light">
                     <div class="d-flex flex-wrap justify-content-md-end align-items-center gap-1">
@@ -423,11 +424,9 @@
             });
         });
 
-        $('#defect-area-modal').on('hidden.bs.modal', function () {
-            defectInput.focus();
-        })
-
         $("#worksheetDefect").on("change", function (event) {
+            @this.worksheetDefect = this.value;
+
             let selectedOption = this.options[this.selectedIndex];
 
             $("#styleDefect").val(selectedOption.getAttribute("data-style"));
@@ -489,6 +488,8 @@
                         defectSecondaryOutListReload();
 
                         updateSecondaryInQty("Defect");
+
+                        clearForm("Defect");
                     }
                 },
                 error: function (jqXHR) {
@@ -585,6 +586,10 @@
         }
 
         Livewire.on("updateSelectedSecondary", function () {
+            defectSecondaryOutListReload();
+        })
+
+        Livewire.on("toInputPanel", function () {
             defectSecondaryOutListReload();
         })
     </script>

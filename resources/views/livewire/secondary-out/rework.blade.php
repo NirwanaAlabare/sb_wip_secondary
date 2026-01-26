@@ -1,5 +1,5 @@
 <div wire:init="loadReworkPage">
-    <div class="loading-container-fullscreen" wire:loading wire:target='submitInput'>
+    <div class="loading-container-fullscreen" wire:loading>
         <div class="loading-container">
             <div class="loading"></div>
         </div>
@@ -90,6 +90,9 @@
     <div class="row">
         <div class="col-md-6">
             <div class="card mt-3" wire:ignore>
+                <div class="card-header bg-defect text-light">
+                    <h5 class="card-title">Defect</h5>
+                </div>
                 <div class="card-body">
                     <div class="mb-3">
                         <input type="date" class="form-control" id="defect-rework-log-date" name="defect-rework-log-date">
@@ -122,6 +125,9 @@
         </div>
         <div class="col-md-6">
             <div class="card mt-3" wire:ignore>
+                <div class="card-header bg-rework text-light">
+                    <h5 class="card-title">Rework</h5>
+                </div>
                 <div class="card-body">
                     <div class="mb-3">
                         <input type="date" class="form-control" id="rework-log-date" name="rework-log-date">
@@ -157,58 +163,6 @@
 
 @push('scripts')
     <script>
-        // Scan QR
-        // if (document.getElementById("rework-reader")) {
-        //     function onScanSuccess(decodedText, decodedResult) {
-        //         // handle the scanned code as you like, for example:
-        //         console.log(`Code matched = ${decodedText}`, decodedResult);
-
-        //         // break decoded text
-        //         let breakDecodedText = decodedText.split('-');
-
-        //         console.log(breakDecodedText);
-
-        //         // set kode_numbering
-        //         @this.numberingInput = breakDecodedText[3];
-
-        //         // set so_det_id
-        //         @this.sizeInput = breakDecodedText[4];
-
-        //         // set size
-        //         @this.sizeInputText = breakDecodedText[5];
-
-        //         // submit
-        //         @this.submitInput();
-
-        //         clearReworkScan();
-        //     }
-
-        //     Livewire.on('renderQrScanner', async (type) => {
-        //         if (type == 'rework') {
-        //             document.getElementById('back-button').disabled = true;
-        //             await refreshReworkScan(onScanSuccess);
-        //             document.getElementById('back-button').disabled = false;
-        //         }
-        //     });
-
-        //     Livewire.on('toInputPanel', async (type) => {
-        //         if (type == 'rework') {
-        //             document.getElementById('back-button').disabled = true;
-        //             await @this.updateOutput();
-        //             await initReworkScan(onScanSuccess);
-        //             document.getElementById('back-button').disabled = false;
-        //         }
-        //     });
-
-        //     Livewire.on('fromInputPanel', () => {
-        //         clearReworkScan();
-        //     });
-        // }
-
-        // Livewire.on('fromInputPanel', () => {
-        //     clearReworkScan();
-        // });
-
         document.addEventListener("DOMContentLoaded", (event) => {
             updateSecondaryOutQty("Rework", "defect", "secondaryInDefectQtyRework");
             updateSecondaryOutQty("Rework", "rework", "secondaryInReworkQtyRework");
@@ -519,11 +473,103 @@
             });
         }
 
+        // CANCEL REWORK
+        function preSubmitCancel(defectId, defectSize, defectType, defectArea, defectImage, defectX, defectY) {
+            Swal.fire({
+                icon: 'info',
+                title: 'CANCEL REWORK ini?',
+                html: `<table class="table text-start w-auto mx-auto">
+                            <tr>
+                                <td>ID<td>
+                                <td>:<td>
+                                <td>`+defectId+`<td>
+                            <tr>
+                            <tr>
+                                <td>Size<td>
+                                <td>:<td>
+                                <td>`+defectSize+`<td>
+                            <tr>
+                            <tr>
+                                <td>Defect Type<td>
+                                <td>:<td>
+                                <td>`+defectType+`<td>
+                            <tr>
+                            <tr>
+                                <td>Defect Area<td>
+                                <td>:<td>
+                                <td>`+defectArea+`<td>
+                            <tr>
+                            <tr>
+                                <td>Defect Image<td>
+                                <td>:<td>
+                                <td>
+                                    <button type="button" class="btn btn-dark" onclick="onShowDefectAreaImage('`+defectImage+`', '`+defectX+`', '`+defectY+`')">
+                                        <i class="fa-regular fa-image"></i>
+                                    </button>
+                                <td>
+                            <tr>
+                        </table>`,
+                showConfirmButton: true,
+                showDenyButton: true,
+                confirmButtonText: 'CANCEL',
+                confirmButtonColor: '#d88202',
+                denyButtonText: 'Batal',
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    cancelSecondaryRework(defectId);
+                } else if (result.isDenied) {
+                    Swal.fire({
+                        icon: 'info',
+                        title: 'CANCEL REWORK dibatalkan',
+                        confirmButtonText: 'Ok',
+                        confirmButtonColor: '#d88202',
+                    });
+                }
+            });
+        }
+
+        function cancelSecondaryRework(id) {
+            document.getElementById("loading").classList.remove("d-none");
+
+            $.ajax({
+                type: "post",
+                url: "{{ route('out-cancel-secondary-out-rework') }}",
+                data: {
+                    selectedSecondary: $("#selectedSecondary").val(),
+                    id : id,
+                },
+                dataType: "json",
+                success: function (response) {
+                    document.getElementById("loading").classList.add("d-none");
+
+                    if (response) {
+                        let notificationType = response.status == 200 ? "success" : "error";
+
+                        showNotification(notificationType, response.message);
+
+                        defectReworkSecondaryOutListReload();
+                        reworkSecondaryOutListReload();
+
+                        updateSecondaryInQty("Rework");
+
+                        updateSecondaryOutQty("Rework", "defect", "secondaryInDefectQtyRework");
+                        updateSecondaryOutQty("Rework", "status", "secondaryInReworkQtyRework");
+                    }
+                },
+                error: function (jqXHR) {
+                    document.getElementById("loading").classList.add("d-none");
+
+                    let res = jqXHR.responseJSON;
+                }
+            });
+        }
+
         Livewire.on("updateSelectedSecondary", function () {
             defectReworkSecondaryOutListReload();
             reworkSecondaryOutListReload();
         })
 
+        // EVENT
         $("#worksheetRework").on("change", function (event) {
             let selectedOption = this.options[this.selectedIndex];
 
@@ -551,5 +597,10 @@
             defectReworkSecondaryOutListReload();
             reworkSecondaryOutListReload();
         });
+
+        Livewire.on("toInputPanel", function () {
+            defectReworkSecondaryOutListReload();
+            reworkSecondaryOutListReload();
+        })
     </script>
 @endpush

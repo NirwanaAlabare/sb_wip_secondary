@@ -77,8 +77,10 @@ Route::middleware('auth')->group(function () {
         Route::post('/submit-secondary-out/rft', 'submitSecondaryOutRft')->name("out-submit-secondary-out-rft");
         Route::post('/submit-secondary-out/defect', 'submitSecondaryOutDefect')->name("out-submit-secondary-out-defect");
         Route::post('/submit-secondary-out/rework', 'submitSecondaryOutRework')->name("out-submit-secondary-out-rework");
+        Route::post('/submit-secondary-out/cancel-rework', 'cancelSecondaryOutRework')->name("out-cancel-secondary-out-rework");
         Route::post('/submit-secondary-out/reject', 'submitSecondaryOutReject')->name("out-submit-secondary-out-reject");
         Route::post('/submit-secondary-out/reject-defect', 'submitSecondaryOutRejectDefect')->name("out-submit-secondary-out-reject-defect");
+        Route::post('/submit-secondary-out/cancel-reject-defect', 'cancelSecondaryOutRejectDefect')->name("out-camcel-secondary-out-reject-defect");
 
         Route::post('/export-secondary-in-out', 'exportSecondaryInOut')->name("out-export-secondary-in-out");
     });

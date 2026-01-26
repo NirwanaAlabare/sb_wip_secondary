@@ -22,38 +22,18 @@ class Rft extends Component
 
     public $outputInput;
 
-    public $sizeInput;
-    public $sizeInputText;
-    public $numberingCode;
-    public $numberingInput;
-    public $rapidRft;
-    public $rapidRftCount;
     public $rft;
 
     public $worksheetRft;
     public $styleRft;
     public $colorRft;
     public $sizeRft;
-    public $kodeRft;
     public $lineRft;
 
     public $selectedSecondary;
     public $selectedSecondaryText;
 
-    protected $rules = [
-        'sizeInput' => 'required',
-        'noCutInput' => 'required',
-        'numberingInput' => 'required',
-    ];
-
-    protected $messages = [
-        'sizeInput.required' => 'Harap scan qr.',
-        'noCutInput.required' => 'Harap scan qr.',
-        'numberingInput.required' => 'Harap scan qr.',
-    ];
-
     protected $listeners = [
-        'setAndSubmitInputRft' => 'setAndSubmitInput',
         'toInputPanel' => 'resetError',
         'updateSelectedSecondary' => 'updateSelectedSecondary'
     ];
@@ -67,19 +47,10 @@ class Rft extends Component
 
         $this->outputInput = 0;
 
-        $this->sizeInput = null;
-        $this->sizeInputText = null;
-        $this->noCutInput = null;
-        $this->numberingInput = null;
-        $this->rapidRft = [];
-        $this->rapidRftCount = 0;
-        $this->submitting = false;
-
         $this->worksheetRft = null;
         $this->styleRft = null;
         $this->colorRft = null;
         $this->sizeRft = null;
-        $this->kodeRft = null;
         $this->lineRft = null;
 
         $this->selectedSecondary = $selectedSecondary;
@@ -149,19 +120,6 @@ class Rft extends Component
             orderBy('kpno', 'asc')->
             groupBy('kpno')->
             get();
-
-        // if (isset($this->errorBag->messages()['numberingInput']) && collect($this->errorBag->messages()['numberingInput'])->contains(function ($message) {return Str::contains($message, 'Kode QR sudah discan');})) {
-        //     foreach ($this->errorBag->messages()['numberingInput'] as $message) {
-        //         $this->emit('alert', 'warning', $message);
-        //     }
-        // } else if ((isset($this->errorBag->messages()['numberingInput']) && collect($this->errorBag->messages()['numberingInput'])->contains("Harap scan qr.")) || (isset($this->errorBag->messages()['sizeInput']) && collect($this->errorBag->messages()['sizeInput'])->contains("Harap scan qr."))) {
-        //     $this->emit('alert', 'error', "Harap scan QR.");
-        // }
-        if (isset($this->errorBag->messages()['numberingInput'])) {
-            foreach ($this->errorBag->messages()['numberingInput'] as $message) {
-                $this->emit('alert', 'error', $message);
-            }
-        }
 
         return view('livewire.secondary-out.rft');
     }

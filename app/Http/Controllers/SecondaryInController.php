@@ -284,7 +284,6 @@ class SecondaryInController extends Controller
                 (
                     output_secondary_in.id IS NOT NULL AND
                     output_rfts.id IS NOT NULL AND
-                    output_secondary_in.kode_numbering is null AND
                     output_secondary_master.id = '".$request->secondary."'
                 )
             ")->
@@ -338,7 +337,6 @@ class SecondaryInController extends Controller
                 (
                     output_secondary_in.id IS NOT NULL AND
                     output_rfts.id IS NOT NULL AND
-                    output_secondary_in.kode_numbering is null AND
                     output_secondary_master.id = '".$request->selectedSecondary."'
                     ".($request->line ? "AND userpassword.username LIKE '%".$request->line."%'" : "")."
                 )

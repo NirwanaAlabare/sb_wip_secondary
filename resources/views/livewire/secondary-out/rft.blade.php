@@ -12,7 +12,7 @@
                     <p class="mb-0 fs-5">Qty</p>
                 </div>
                 <div class="card-body" wire:ignore.self>
-                    @error('numberingInput')
+                    @error('outputInput')
                         <div class="alert alert-danger alert-dismissible fade show mb-0 rounded-0" role="alert">
                             <strong>Error</strong> {{$message}}
                             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
@@ -137,7 +137,7 @@
     <footer class="footer fixed-bottom py-3">
         <div class="container-fluid">
             <div class="d-flex justify-content-end">
-                <button class="btn btn-dark btn-lg ms-auto fs-3" onclick="submitSecondaryIn()">SELESAI</button>
+                <button class="btn btn-dark btn-lg ms-auto fs-3" onclick="submitSecondaryRft()">SELESAI</button>
             </div>
         </div>
     </footer>
@@ -145,64 +145,6 @@
 
 @push('scripts')
     <script>
-        // Scan QR
-            // if (document.getElementById("rft-reader")) {
-            //     function onScanSuccess(decodedText, decodedResult) {
-            //         // handle the scanned code as you like, for example:
-
-            //         // break decoded text
-            //         let breakDecodedText = decodedText.split('-');
-
-            //         console.log(breakDecodedText);
-
-            //         // set kode_numbering
-            //         @this.numberingInput = breakDecodedText[3];
-
-            //         // set so_det_id
-            //         @this.sizeInput = breakDecodedText[4];
-
-            //         // set size
-            //         @this.sizeInputText = breakDecodedText[5];
-
-            //         // submit
-            //         @this.submitInput();
-
-            //         clearRftScan();
-            //     }
-
-            //     Livewire.on('renderQrScanner', async (type) => {
-            //         if (type == 'rft') {
-            //             document.getElementById('back-button').disabled = true;
-            //             await refreshRftScan(onScanSuccess);
-            //             document.getElementById('back-button').disabled = false;
-            //         }
-            //     });
-
-            //     Livewire.on('toInputPanel', async (type) => {
-            //         if (type == 'rft') {
-            //             document.getElementById('back-button').disabled = true;
-            //             await @this.updateOutput();
-            //             await initRftScan(onScanSuccess);
-            //             document.getElementById('back-button').disabled = false;
-            //         }
-            //     });
-
-            //     Livewire.on('fromInputPanel', () => {
-            //         clearRftScan();
-            //     });
-            // }
-
-        // On Livewire Render
-        document.addEventListener('livewire:load', () => {
-            Livewire.hook('message.processed', (message, component) => {
-                // $('.select2').select2({
-                //     theme: "bootstrap-5",
-                //     width: $( this ).data( 'width' ) ? $( this ).data( 'width' ) : $( this ).hasClass( 'w-100' ) ? '100%' : 'style',
-                //     placeholder: $( this ).data( 'placeholder' ),
-                // });
-            })
-        })
-
         $("#worksheetRft").on("change", function (event) {
             let selectedOption = this.options[this.selectedIndex];
 
@@ -222,10 +164,6 @@
         $("#sewingLineRft").on("change", function (event) {
             updateSecondaryInQty("Rft");
         });
-
-        // Livewire.on('fromInputPanel', () => {
-        //     clearRftScan();
-        // });
 
         function submitSecondaryRft() {
             document.getElementById("loading").classList.remove("d-none");
@@ -265,6 +203,8 @@
                         rftSecondaryOutListReload();
 
                         updateSecondaryInQty("Rft");
+
+                        clearForm("Rft");
                     }
                 },
                 error: function (jqXHR) {
@@ -336,6 +276,10 @@
         }
 
         Livewire.on("updateSelectedSecondary", function () {
+            rftSecondaryOutListReload();
+        })
+
+        Livewire.on("toInputPanel", function () {
             rftSecondaryOutListReload();
         })
     </script>
