@@ -11,7 +11,7 @@ use Maatwebsite\Excel\Concerns\Exportable;
 use Maatwebsite\Excel\Concerns\FromView;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 
-class SecondaryInOutExport implements FromView, ShouldAutoSize
+class SecondaryOutExport implements FromView, ShouldAutoSize
 {
     use Exportable;
 
@@ -62,9 +62,9 @@ class SecondaryInOutExport implements FromView, ShouldAutoSize
             // Conditional
             whereRaw("
                 (
-                    output_secondary_in.created_at between '".$this->tanggal." 00:00:00' and '".$this->tanggal." 23:59:59'
+                    output_secondary_in.created_at between '".$this->dateFrom." 00:00:00' and '".$this->dateTo." 23:59:59'
                     OR
-                    output_secondary_out.created_at between '".$this->tanggal." 00:00:00' and '".$this->tanggal." 23:59:59'
+                    output_secondary_out.created_at between '".$this->dateFrom." 00:00:00' and '".$this->dateTo." 23:59:59'
                 )
             ")->
             whereRaw("

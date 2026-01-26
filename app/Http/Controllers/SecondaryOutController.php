@@ -10,7 +10,7 @@ use App\Models\SignalBit\OutputFinishing;
 use App\Models\SignalBit\SewingSecondaryIn;
 use App\Models\SignalBit\SewingSecondaryOut;
 use App\Models\SignalBit\SewingSecondaryMaster;
-use App\Exports\SecondaryInOutExport;
+use App\Exports\SecondaryOutExport;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
