@@ -631,6 +631,36 @@ function clearOutputInputJs() {
     }
 }
 
+function clearForm(suffix= '') {
+    // $("#worksheet"+suffix).val(null).trigger("change");
+    // $("#style"+suffix).val(null).trigger("change");
+    // $("#color"+suffix).val(null).trigger("change");
+    // $("#size"+suffix).val(null).trigger("change");
+    // $("#sewingLine"+suffix).val(null).trigger("change");
+
+    $("#rft-input").val(0);
+    $("#defect-input").val(0);
+    $("#reject-input").val(0);
+    $("#reject-input").val(0);
+    $("#secondaryInQty").val(0);
+
+    if (suffix == "Defect") {
+        $("#defect-type-select2").val(null).trigger("change");
+        $("#defect-area-select2").val(null).trigger("change");
+        $("#defect-area-position-x-livewire").val(null).trigger("change");
+        $("#defect-area-position-y-livewire").val(null).trigger("change");
+    }
+
+    if (suffix == "Reject") {
+        $("#reject-type-select2").val(null).trigger("change");
+        $("#reject-area-select2").val(null).trigger("change");
+        $("#reject-area-position-x-livewire").val(null).trigger("change");
+        $("#reject-area-position-y-livewire").val(null).trigger("change");
+    }
+
+    $('.is-invalid').removeClass('is-invalid');
+}
+
 // Reminder
 function showReminder(hoursminutes) {
     Swal.fire({

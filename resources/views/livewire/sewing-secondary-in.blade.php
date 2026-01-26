@@ -656,12 +656,18 @@
                         reloadSecondaryInListTable();
 
                         updateSewingQty();
+
+                        clearForm();
                     }
                 },
                 error: function (jqXHR) {
                     document.getElementById("loading").classList.add("d-none");
 
                     console.error(jqXHR);
+
+                    let res = jqXHR.responseJSON;
+
+                    showValidationError(res);
                 }
             });
         }

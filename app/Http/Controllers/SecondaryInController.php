@@ -612,7 +612,15 @@ class SecondaryInController extends Controller
             'worksheet' => 'required',
             'color' => 'required',
             'size' => 'required',
-            'qty' => 'required',
+            'qty' => 'required|gt:0',
+        ],[
+            'selectedSecondary.required' => 'Harap tentukan secondary <br>',
+            'sewingLine.required' => 'Harap tentukan sewing line <br>',
+            'worksheet.required' => 'Harap tentukan worksheet <br>',
+            'color.required' => 'Harap tentukan color <br>',
+            'size.required' => 'Harap tentukan size <br>',
+            'qty.required' => 'Harap tentukan qty <br>',
+            'qty.gt' => 'Minimal qty : 1 <br>',
         ]);
 
         // Check Output Sewing
