@@ -351,11 +351,11 @@
         });
 
         function clearForm(suffix= '') {
-            $("#worksheet"+suffix).val(null).trigger("change");
-            $("#style"+suffix).val(null).trigger("change");
-            $("#color"+suffix).val(null).trigger("change");
-            $("#size"+suffix).val(null).trigger("change");
-            $("#sewingLine"+suffix).val(null).trigger("change");
+            // $("#worksheet"+suffix).val(null).trigger("change");
+            // $("#style"+suffix).val(null).trigger("change");
+            // $("#color"+suffix).val(null).trigger("change");
+            // $("#size"+suffix).val(null).trigger("change");
+            // $("#sewingLine"+suffix).val(null).trigger("change");
 
             $("#rft-input").val(0);
             $("#defect-input").val(0);

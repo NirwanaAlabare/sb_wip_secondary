@@ -738,10 +738,10 @@ class SecondaryOutController extends Controller
             'qty' => 'required|gt:0',
         ],[
             'selectedSecondary.required' => 'Harap tentukan secondary <br>',
-            'sewingLine' => 'Harap tentukan sewing line <br>',
-            'worksheet' => 'Harap tentukan worksheet <br>',
-            'color' => 'Harap tentukan color <br>',
-            'size' => 'Harap tentukan size <br>',
+            'sewingLine.required' => 'Harap tentukan sewing line <br>',
+            'worksheet.required' => 'Harap tentukan worksheet <br>',
+            'color.required' => 'Harap tentukan color <br>',
+            'size.required' => 'Harap tentukan size <br>',
             'qty.required' => 'Harap tentukan qty <br>',
             'qty.gt' => 'Minimal qty : 1 <br>',
         ]);
