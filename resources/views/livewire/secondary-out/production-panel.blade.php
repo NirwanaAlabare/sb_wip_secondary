@@ -39,7 +39,7 @@
                 </div>
             </div>
         </div>
-    </div> --}}
+    </div> --}
 
     {{-- Production Panels --}}
     <div class="production-panel row row-gap-3 mb-3" id="production-panel">

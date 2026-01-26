@@ -21,7 +21,7 @@
         <div class="row" id="content-history" wire:loading.remove wire:target="dateFrom, dateTo">
             <div class="col-md-12 table-responsive">
                 <div class="mb-3">
-                    <input type="text" class="form-control form-control-sm" placeholder="Search..." wire:model="defectInOutSearch">
+                    <input type="text" class="form-control form-control-sm" placeholder="Search..." wire:model="secondaryInOutSearch">
                 </div>
                 <table class="table table-bordered w-100 mx-auto">
                     <thead>
@@ -30,32 +30,37 @@
                             <th>Line</th>
                             <th>Master Plan</th>
                             <th>Size</th>
-                            <th>Type</th>
-                            <th>Qty</th>
                             <th>Status</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @if (count($latestDefectInOut) < 1)
+                        @if (count($latestSecondaryInOuts) < 1)
                             <tr>
                                 <td colspan="7" class="text-center">Data tidak ditemukan</td>
                             </tr>
                         @else
-                            @foreach ($latestDefectInOut as $latestDefect)
+                            @php
+                                $color = [
+                                    "RFT" => "success",
+                                    "DEFECT" => "warning",
+                                    "REJECT" => "danger",
+                                    "REWORK" => "primary",
+                                    "WIP" => "sb",
+                                ];
+                            @endphp
+                            @foreach ($latestSecondaryInOuts as $latestSecondaryInOut)
                                 <tr>
-                                    <td>{{ $latestDefect->time }}</td>
-                                    <td>{{ $latestDefect->sewing_line }}</td>
-                                    <td>{{ $latestDefect->ws." - ".$latestDefect->style." - ".$latestDefect->color }}</td>
-                                    <td>{{ $latestDefect->size }}</td>
-                                    <td>{{ $latestDefect->defect_type }}</td>
-                                    <td>{{ $latestDefect->qty }}</td>
-                                    <td class="fw-bold {{ $latestDefect->status == "defect" ? "text-defect" : "text-rework" }}">{{ strtoupper($latestDefect->status) }}</td>
+                                    <td>{{ $latestSecondaryInOut->time }}</td>
+                                    <td>{{ $latestSecondaryInOut->sewing_line }}</td>
+                                    <td>{{ $latestSecondaryInOut->no_ws." - ".$latestSecondaryInOut->style." - ".$latestSecondaryInOut->color }}</td>
+                                    <td>{{ $latestSecondaryInOut->size }}</td>
+                                    <td class="fw-bold {{ $latestSecondaryInOut->status ? "text-".($color[$latestSecondaryInOut->status]) : "" }}">{{ strtoupper($latestSecondaryInOut->status) }}</td>
                                 </tr>
                             @endforeach
                         @endif
                     </tbody>
                 </table>
-                {{ $latestDefectInOut->links() }}
+                {{ $latestSecondaryInOuts->links() }}
             </div>
         </div>
     </div>

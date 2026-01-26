@@ -11,6 +11,7 @@ use App\Models\SignalBit\Reject;
 use App\Models\SignalBit\Rework;
 use App\Models\SignalBit\MasterPlan;
 use App\Models\SignalBit\DefectInOut;
+use App\Models\SignalBit\SewingSecondaryIn;
 
 class HistoryContent extends Component
 {
@@ -20,7 +21,7 @@ class HistoryContent extends Component
 
     public $dateFrom;
     public $dateTo;
-    public $defectInOutSearch;
+    public $secondaryInOutSearch;
 
     public function mount()
     {
@@ -28,70 +29,72 @@ class HistoryContent extends Component
         $this->dateTo = $this->dateTo ? $this->dateTo : date('Y-m-d');
     }
 
-    public function updatingDefectInOutSearch()
+    public function updatingSecondaryInOutSearch()
     {
-        $this->resetPage("defectInOutPage");
+        $this->resetPage("secondaryInOutPage");
     }
 
     public function render()
     {
-        $masterPlan = session()->get('orderInfo');
-        $this->masterPlan = $masterPlan ? $masterPlan->id : null;
-
-        $defectInOutQuery = DefectInOut::selectRaw("
-                COALESCE(output_defect_in_out.reworked_at, output_defect_in_out.updated_at) time,
-                master_plan.id master_plan_id,
-                master_plan.id_ws,
-                master_plan.sewing_line,
-                act_costing.kpno as ws,
-                act_costing.styleno as style,
-                master_plan.color as color,
-                output_defects.defect_type_id,
-                output_defect_types.defect_type,
-                output_defects.so_det_id,
-                so_det.size,
-                COUNT(output_defect_in_out.id) qty,
-                output_defect_in_out.status
+        $latestSecondaryInOuts = SewingSecondaryIn::selectRaw("
+                GREATEST(output_Secondary_in.updated_at, output_Secondary_out.updated_at) time,
+                output_secondary_in.created_at time_in,
+                output_secondary_out.created_at time_out,
+                userpassword.username sewing_line,
+                output_secondary_in.kode_numbering,
+                act_costing.kpno no_ws,
+                act_costing.styleno style,
+                so_det.color color,
+                so_det.size size,
+                COALESCE(output_defect_types.defect_type, output_defect_types_reject.defect_type) defect_type,
+                COALESCE(output_defect_areas.defect_area, output_defect_areas_reject.defect_area) defect_area,
+                master_plan.gambar gambar,
+                COALESCE(output_secondary_out_defect.defect_area_x, output_secondary_out_reject.defect_area_x) defect_area_x,
+                COALESCE(output_secondary_out_defect.defect_area_y, output_secondary_out_reject.defect_area_y) defect_area_y,
+                (CASE WHEN output_secondary_out.id IS NOT NULL THEN UPPER(output_secondary_out.status) ELSE 'WIP' END) as status,
+                output_secondary_in.created_by_username user_in,
+                output_secondary_out.created_by_username user_out,
+                output_secondary_master.secondary
             ")->
-            leftJoin("output_defects", "output_defects.id", "=", "output_defect_in_out.defect_id")->
-            leftJoin("so_det", "so_det.id", "=", "output_defects.so_det_id")->
-            leftJoin("master_plan", "master_plan.id", "=", "output_defects.master_plan_id")->
-            leftJoin("act_costing", "act_costing.id", "=", "master_plan.id_ws")->
-            leftJoin("output_defect_types", "output_defect_types.id", "=", "output_defects.defect_type_id")->
-            where("output_defect_in_out.type", Auth::user()->Groupp);
-            if ($this->defectInOutSearch) {
-                $defectInOutQuery->whereRaw("(
-                    COALESCE(output_defect_in_out.reworked_at, output_defect_in_out.updated_at) LIKE '%".$this->defectInOutSearch."%' OR
-                    master_plan.tgl_plan LIKE '%".$this->defectInOutSearch."%' OR
-                    master_plan.sewing_line LIKE '%".$this->defectInOutSearch."%' OR
-                    act_costing.kpno LIKE '%".$this->defectInOutSearch."%' OR
-                    act_costing.styleno LIKE '%".$this->defectInOutSearch."%' OR
-                    master_plan.color LIKE '%".$this->defectInOutSearch."%' OR
-                    output_defect_types.defect_type LIKE '%".$this->defectInOutSearch."%' OR
-                    output_defect_in_out.status LIKE '%".$this->defectInOutSearch."%' OR
-                    so_det.size LIKE '%".$this->defectInOutSearch."%'
-                )");
-            }
-            if ($this->dateFrom) {
-                $defectInOutQuery->whereRaw("DATE(COALESCE(output_defect_in_out.reworked_at, output_defect_in_out.updated_at)) >= '".$this->dateFrom."'");
-            }
-            if ($this->dateTo) {
-                $defectInOutQuery->whereRaw("DATE(COALESCE(output_defect_in_out.reworked_at, output_defect_in_out.updated_at)) <= '".$this->dateTo."'");
-            }
-            $latestDefectInOut = $defectInOutQuery->
-                groupByRaw("
-                    master_plan.sewing_line,
-                    master_plan.id,
-                    output_defect_types.id,
-                    output_defects.so_det_id,
-                    COALESCE(output_defect_in_out.reworked_at, output_defect_in_out.updated_at)
-                ")->
-                orderBy("output_defect_in_out.updated_at", "desc")->
-                orderBy("output_defect_in_out.reworked_at", "desc")->
-                paginate(10, ['*'], 'lastDefectOut');
+            leftJoin("output_secondary_out", "output_secondary_out.secondary_in_id", "=", "output_secondary_in.id")->
+            leftJoin("output_secondary_out_defect", "output_secondary_out_defect.secondary_out_id", "=", "output_secondary_out.id")->
+            leftJoin("output_secondary_out_reject", "output_secondary_out_reject.secondary_out_id", "=", "output_secondary_out.id")->
+            leftJoin("output_secondary_master", "output_secondary_master.id", "=", "output_secondary_in.secondary_id")->
+            leftJoin("output_defect_types", "output_defect_types.id", "=", "output_secondary_out_defect.defect_type_id")->
+            leftJoin("output_defect_types as output_defect_types_reject", "output_defect_types_reject.id", "=", "output_secondary_out_reject.defect_type_id")->
+            leftJoin("output_defect_areas", "output_defect_areas.id", "=", "output_secondary_out_defect.defect_area_id")->
+            leftJoin("output_defect_areas as output_defect_areas_reject", "output_defect_areas_reject.id", "=", "output_secondary_out_reject.defect_area_id")->
+            leftJoin("output_rfts", "output_rfts.id", "=", "output_secondary_in.rft_id")->
+            leftJoin("so_det", "so_det.id", "=", "output_rfts.so_det_id")->
+            leftJoin("so", "so.id", "=", "so_det.id_so")->
+            leftJoin("act_costing", "act_costing.id", "=", "so.id_cost")->
+            leftJoin("master_plan", "master_plan.id", "=", "output_rfts.master_plan_id")->
+            leftJoin("user_sb_wip", "user_sb_wip.id", "=", "output_rfts.created_by")->
+            leftJoin("userpassword", "userpassword.line_id", "=", "user_sb_wip.line_id")->
+            // Conditional
+            whereRaw("
+                (
+                    (
+                        output_secondary_in.updated_at between '".$this->dateFrom." 00:00:00' and '".$this->dateTo." 23:59:59'
+                    )
+                    OR
+                    (
+                        output_secondary_out.updated_at between '".$this->dateFrom." 00:00:00' and '".$this->dateTo." 23:59:59'
+                    )
+                )
+            ")->
+            whereRaw("
+                (
+                    output_secondary_in.id IS NOT NULL AND
+                    output_rfts.id IS NOT NULL
+                )
+            ")->
+            groupBy("output_secondary_in.id")->
+            orderByRaw("GREATEST(output_Secondary_in.updated_at, output_Secondary_out.updated_at)")->
+            paginate(10, ['*'], 'lastSecondaryInOut');
 
         return view('livewire.history-content', [
-            'latestDefectInOut' => $latestDefectInOut,
+            'latestSecondaryInOuts' => $latestSecondaryInOuts,
         ]);
     }
 }
