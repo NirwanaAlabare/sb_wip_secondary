@@ -96,7 +96,7 @@ class GeneralController extends Controller
             leftJoin("master_size_new", "master_size_new.size", "=", "so_det.size")->
             where("act_costing.id", $request->worksheet)->
             where("so_det.color", $request->color)->
-            groupBy("so_det.id")->
+            groupBy("act_costing.kpno", "so_det.color", "so_det.size")->
             orderBy("master_size_new.urutan")->
             get();
 
