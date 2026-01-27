@@ -344,7 +344,7 @@ class SecondaryInController extends Controller
             groupBy("output_secondary_in.id")->
             get();
 
-        return array("secondaryIn" => $secondaryInOutQuery->count(), "secondaryProcess" => $secondaryInOutQuery->where("status", "WIP")->count(), "secondaryRft" => $secondaryInOutQuery->where("status", "RFT")->count(), "secondaryDefect" => $secondaryInOutQuery->where("status", "DEFECT")->count(), "secondaryReject" => $secondaryInOutQuery->where("status", "REJECT")->count());
+        return array("secondaryIn" => $secondaryInOutQuery->count(), "secondaryProcess" => $secondaryInOutQuery->where("status", "WIP")->count(), "secondaryRft" => $secondaryInOutQuery->where("status", "RFT")->count(), "secondaryRework" => $secondaryInOutQuery->where("status", "REWORK")->count(), "secondaryDefect" => $secondaryInOutQuery->where("status", "DEFECT")->count(), "secondaryReject" => $secondaryInOutQuery->where("status", "REJECT")->count());
     }
 
     public function getSecondaryInList(Request $request)
@@ -434,6 +434,7 @@ class SecondaryInController extends Controller
                     output_secondary_in.created_by_username
                 FROM
                     `output_secondary_in`
+                    LEFT JOIN `output_secondary_out` ON `output_secondary_out`.`secondary_in_id` = `output_secondary_in`.`id`
                     LEFT JOIN `output_secondary_master` ON `output_secondary_master`.`id` = `output_secondary_in`.`secondary_id`
                     LEFT JOIN `output_rfts` ON `output_rfts`.`id` = `output_secondary_in`.`rft_id`
                     LEFT JOIN `user_sb_wip` ON `user_sb_wip`.`id` = `output_rfts`.`created_by`
@@ -445,6 +446,7 @@ class SecondaryInController extends Controller
                 WHERE
                     `output_rfts`.`id` IS NOT NULL
                     AND output_rfts.master_plan_id is not null
+                    AND output_secondary_out.id is null
                     AND output_secondary_in.kode_numbering is null
                     AND output_secondary_in.updated_at >= '2025-12-01 00:00:00'
                     AND output_secondary_master.id = '".$request->selectedSecondary."'
@@ -564,6 +566,7 @@ class SecondaryInController extends Controller
                         output_secondary_in.created_by_username
                     FROM
                         `output_secondary_in`
+                        LEFT JOIN `output_secondary_out` ON `output_secondary_out`.`secondary_in_id` = `output_secondary_in`.`id`
                         LEFT JOIN `output_secondary_master` ON `output_secondary_master`.`id` = `output_secondary_in`.`secondary_id`
                         LEFT JOIN `output_rfts` ON `output_rfts`.`id` = `output_secondary_in`.`rft_id`
                         LEFT JOIN `user_sb_wip` ON `user_sb_wip`.`id` = `output_rfts`.`created_by`
@@ -575,6 +578,7 @@ class SecondaryInController extends Controller
                     WHERE
                         `output_rfts`.`id` IS NOT NULL
                         AND output_rfts.master_plan_id is not null
+                        AND output_secondary_out.id is null
                         AND output_secondary_in.kode_numbering is null
                         AND output_secondary_in.updated_at >= '2025-12-01 00:00:00'
                         AND output_secondary_master.id = '".$request->selectedSecondary."'

@@ -188,10 +188,10 @@
                                         <th>Action</th>
                                         <th>Date</th>
                                         <th>Total IN</th>
-                                        <th>Total PROCESS</th>
-                                        <th>Total RFT</th>
+                                        <th>Total OUTPUT</th>
                                         <th>Total DEFECT</th>
                                         <th>Total REJECT</th>
+                                        <th>Total WIP</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -764,9 +764,6 @@
                     data: 'total_in',
                 },
                 {
-                    data: 'total_process',
-                },
-                {
                     data: 'total_rft',
                 },
                 {
@@ -774,7 +771,10 @@
                 },
                 {
                     data: 'total_reject',
-                }
+                },
+                {
+                    data: 'total_process',
+                },
             ],
             columnDefs: [
                 {
