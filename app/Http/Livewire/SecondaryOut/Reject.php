@@ -600,6 +600,15 @@ class Reject extends Component
         }
     }
 
+    public function clearForm() {
+        $this->worksheetReject = "";
+        $this->styleReject = "";
+        $this->colorReject = "";
+        $this->sizeReject = "";
+        $this->kodeReject = "";
+        $this->lineReject = "";
+    }
+
     public function render(SessionManager $session)
     {
         $this->emit('loadRejectPageJs');

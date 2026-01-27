@@ -35,9 +35,9 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/in', function () {
         return view('index-in', ["mode" => "in"]);
-    });
+    })->name('in');
 
-    Route::get('/out', [ProductionController::class, 'index']);
+    Route::get('/out', [ProductionController::class, 'index'])->name('out');
 
     Route::controller(GeneralController::class)->prefix('general')->group(function () {
         Route::get('/get-master-plan', 'getMasterPlan')->name("get-master-plan");

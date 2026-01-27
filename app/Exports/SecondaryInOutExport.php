@@ -26,9 +26,9 @@ class SecondaryInOutExport implements FromView, ShouldAutoSize
 
     public function view(): View
     {
-        $secondaryInOutQuery = SewingSecondaryIn::selectRaw("
-                output_secondary_in.created_at time_in,
-                output_secondary_out.created_at time_out,
+         $secondaryInOutQuery = SewingSecondaryIn::selectRaw("
+                output_secondary_in.updated_at time_in,
+                output_secondary_out.updated_at time_out,
                 userpassword.username sewing_line,
                 output_secondary_in.kode_numbering,
                 act_costing.kpno no_ws,
@@ -62,9 +62,7 @@ class SecondaryInOutExport implements FromView, ShouldAutoSize
             // Conditional
             whereRaw("
                 (
-                    output_secondary_in.created_at between '".$this->dateFrom." 00:00:00' and '".$this->dateTo." 23:59:59'
-                    OR
-                    output_secondary_out.created_at between '".$this->dateFrom." 00:00:00' and '".$this->dateTo." 23:59:59'
+                    output_secondary_in.updated_at between '".$this->dateFrom." 00:00:00' and '".$this->dateTo." 23:59:59'
                 )
             ")->
             whereRaw("

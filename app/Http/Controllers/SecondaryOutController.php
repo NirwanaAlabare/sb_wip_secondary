@@ -223,7 +223,7 @@ class SecondaryOutController extends Controller
         $secondary = $request->secondary ? $request->secondary : '';
 
         $secondaryInOutDaily = SewingSecondaryIn::selectRaw("
-                DATE(output_secondary_in.created_at) tanggal,
+                DATE(output_secondary_out.updated_at) tanggal,
                 COUNT(output_secondary_in.id) total_in,
                 SUM(CASE WHEN output_secondary_out.status = 'rft' THEN 1 ELSE 0 END) total_rft,
                 SUM(CASE WHEN output_secondary_out.status = 'defect' THEN 1 ELSE 0 END) total_defect,
@@ -236,8 +236,8 @@ class SecondaryOutController extends Controller
             leftJoin("output_rfts", "output_rfts.id", "=", "output_secondary_in.rft_id")->
             where("output_secondary_master.id", $secondary)->
             whereNotNull("output_secondary_out.id")->
-            whereBetween(DB::raw("COALESCE(output_secondary_out.updated_at, output_secondary_out.created_at)"), [$dateFrom." 00:00:00", $dateTo." 23:59:59"])->
-            groupByRaw("DATE(output_secondary_in.created_at)")->
+            whereBetween(DB::raw("output_secondary_out.updated_at"), [$dateFrom." 00:00:00", $dateTo." 23:59:59"])->
+            groupByRaw("DATE(output_secondary_out.updated_at)")->
             get();
 
         return DataTables::of($secondaryInOutDaily)->toJson();
@@ -245,8 +245,8 @@ class SecondaryOutController extends Controller
 
     public function getSecondaryInOutDetail(Request $request) {
         $secondaryInOutQuery = SewingSecondaryIn::selectRaw("
-                output_secondary_in.created_at time_in,
-                output_secondary_out.created_at time_out,
+                output_secondary_in.updated_at time_in,
+                output_secondary_out.updated_at time_out,
                 userpassword.username sewing_line,
                 output_secondary_in.kode_numbering,
                 act_costing.kpno no_ws,
@@ -280,9 +280,7 @@ class SecondaryOutController extends Controller
             // Conditional
             whereRaw("
                 (
-                    output_secondary_in.created_at between '".$request->tanggal." 00:00:00' and '".$request->tanggal." 23:59:59'
-                    OR
-                    output_secondary_out.created_at between '".$request->tanggal." 00:00:00' and '".$request->tanggal." 23:59:59'
+                    output_secondary_out.updated_at between '".$request->tanggal." 00:00:00' and '".$request->tanggal." 23:59:59'
                 )
             ")->
             whereRaw("
@@ -301,8 +299,8 @@ class SecondaryOutController extends Controller
 
     public function getSecondaryInOutDetailTotal(Request $request) {
         $secondaryInOutQuery = SewingSecondaryIn::selectRaw("
-                output_secondary_in.created_at time_in,
-                output_secondary_out.created_at time_out,
+                output_secondary_in.updated_at time_in,
+                output_secondary_out.updated_at time_out,
                 userpassword.username sewing_line,
                 output_secondary_in.kode_numbering,
                 act_costing.kpno no_ws,
@@ -336,9 +334,7 @@ class SecondaryOutController extends Controller
             // Conditional
             whereRaw("
                 (
-                    output_secondary_in.created_at between '".$request->tanggal." 00:00:00' and '".$request->tanggal." 23:59:59'
-                    OR
-                    output_secondary_out.created_at between '".$request->tanggal." 00:00:00' and '".$request->tanggal." 23:59:59'
+                    output_secondary_out.updated_at between '".$request->tanggal." 00:00:00' and '".$request->tanggal." 23:59:59'
                 )
             ")->
             whereRaw("
@@ -503,6 +499,8 @@ class SecondaryOutController extends Controller
                 output_secondary_out_reject.defect_area_y as reject_area_y,
                 COUNT(output_secondary_out.id) output,
                 output_secondary_out.created_by_username,
+                UPPER(output_secondary_out_defect.status) defect_status,
+                UPPER(output_secondary_out_reject.status) reject_status,
                 COALESCE(output_secondary_out.updated_at, output_secondary_out.created_at) as secondary_out_time,
                 master_plan.gambar
             from

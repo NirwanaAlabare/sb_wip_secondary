@@ -72,8 +72,8 @@
                             </div>
                         </div>
                     </div>
-                    <div class="table-responsive mt-3">
-                        <table class="table w-100" id="secondary-in-list-table" wire:ignore>
+                    <div class="table-responsive mt-3" wire:ignore>
+                        <table class="table w-100" id="secondary-in-list-table">
                             <thead>
                                 <tr>
                                     <th>No. </th>
@@ -142,34 +142,34 @@
                     </div>
                 </div>
                 <div class="card-body">
-                    <div>
+                    <div wire:ignore>
                         <div class="d-flex justify-content-between align-items-end">
                             <div class="d-flex align-items-end gap-3 mb-3">
                                 <div>
                                     <label class="form-label">From</label>
-                                    <input type="date" class="form-control" value="{{ date("Y-m-d", strtotime("-7 days")) }}" id="dateFrom" wire:model="secondaryInOutFrom" onchange="secondaryInOutReload()">
+                                    <input type="date" class="form-control" value="{{ date("Y-m-d", strtotime("-7 days")) }}" id="dateFrom" onchange="secondaryInOutReload()">
                                 </div>
                                 <span class="mb-2">-</span>
                                 <div>
                                     <label class="form-label">To</label>
-                                    <input type="date" class="form-control" value="{{ date("Y-m-d") }}" id="dateTo" wire:model="secondaryInOutTo" onchange="secondaryInOutReload()">
+                                    <input type="date" class="form-control" value="{{ date("Y-m-d") }}" id="dateTo" onchange="secondaryInOutReload()">
                                 </div>
                             </div>
-                            <div class="mb-3" wire:ignore>
+                            <div class="mb-3">
                                 <button class="btn btn-success" onclick="exportExcel(this)"><i class="fa fa-file-excel"></i> Export</button>
                             </div>
                         </div>
-                        <div class="table-responsive" wire:ignore>
+                        <div class="table-responsive">
                             <table class="table table-bordered w-100" id="secondary-in-out-table">
                                 <thead>
                                     <tr>
                                         <th>Action</th>
                                         <th>Date</th>
                                         <th>Total IN</th>
-                                        <th>Total PROCESS</th>
-                                        <th>Total RFT</th>
+                                        <th>Total OUTPUT</th>
                                         <th>Total DEFECT</th>
                                         <th>Total REJECT</th>
+                                        <th>Total WIP</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -673,9 +673,6 @@
                     data: 'total_in',
                 },
                 {
-                    data: 'total_process',
-                },
-                {
                     data: 'total_rft',
                 },
                 {
@@ -683,7 +680,10 @@
                 },
                 {
                     data: 'total_reject',
-                }
+                },
+                {
+                    data: 'total_process',
+                },
             ],
             columnDefs: [
                 {
@@ -805,7 +805,7 @@
                         if (response) {
                             $("#secondaryInOutDetailIn").val(response.secondaryIn);
                             $("#secondaryInOutDetailProcess").val(response.secondaryProcess);
-                            $("#secondaryInOutDetailRft").val(response.secondaryRft);
+                            $("#secondaryInOutDetailRft").val(response.secondaryRft+response.secondaryRework);
                             $("#secondaryInOutDetailDefect").val(response.secondaryDefect);
                             $("#secondaryInOutDetailReject").val(response.secondaryReject);
                         }

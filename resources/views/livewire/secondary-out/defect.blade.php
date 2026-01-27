@@ -181,7 +181,7 @@
                         <div class="col-md-12">
                             <div class="d-flex justify-content-end gap-3">
                                 <button type="button" class="btn btn-danger" wire:click='clearForm'>Batal</button>
-                                <div id="regular-submit" wire:ignore.self>
+                                <div id="regular-submit">
                                     <button type="button" class="btn btn-success" wire:click='submitInput'>SIMPAN</button>
                                 </div>
                             </div>
@@ -366,7 +366,7 @@
     <footer class="footer fixed-bottom py-3">
         <div class="container-fluid">
             <div class="d-flex justify-content-end">
-                <button class="btn btn-dark btn-lg ms-auto fs-3" onclick="triggerSubmit()">LANJUT</button>
+                <button class="btn btn-dark btn-lg ms-auto fs-3" wire:click="submitInput">SELESAI</button>
             </div>
         </div>
     </footer>

@@ -23,11 +23,14 @@
                     </div>
                     @role ("in_out")
                         <div class="col-md-auto">
-                            <li class="nav-item w-100">
-                                <select name="in_out" id="in-out" class="form-select form-select-sm" onchange="changeInOutMode(this.value)">
-                                    <option value="IN" {{ $mode && $mode == "IN" ? "selected" : "" }}>IN</option>
-                                    <option value="OUT" {{ $mode && $mode == "OUT" ? "selected" : "" }}>OUT</option>
-                                </select>
+                            <li class="nav-item bg-light dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    {{ $mode }}
+                                </a>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" href="{{ route('in') }}">IN</a></li>
+                                    <li><a class="dropdown-item" href="{{ route('out') }}">OUT</a></li>
+                                </ul>
                             </li>
                         </div>
                     @endrole

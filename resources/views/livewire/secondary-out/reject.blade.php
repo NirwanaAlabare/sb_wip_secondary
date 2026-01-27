@@ -156,9 +156,13 @@
                         </div>
                         <div class="col-md-12">
                             <div class="d-flex justify-content-end gap-3">
-                                <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Batal</button>
-                                <div id="regular-submit-reject" wire:ignore.self>
-                                    <button type="button" class="btn btn-success" wire:click="submitInput">Selesai</button>
+                               <div class="col-md-12">
+                                    <div class="d-flex justify-content-end gap-3">
+                                        <button type="button" class="btn btn-danger" wire:click='clearForm'>Batal</button>
+                                        <div id="regular-submit">
+                                            <button type="button" class="btn btn-success" wire:click='submitInput'>SELESAI</button>
+                                        </div>
+                                    </div>
                                 </div>
                                 {{-- <div id="rapid-submit-reject" wire:ignore.self>
                                     <button type="button" class="btn btn-success" wire:click='submitRapidInput'>Selesai</button>
@@ -267,7 +271,7 @@
     <footer class="footer fixed-bottom py-3">
         <div class="container-fluid">
             <div class="d-flex justify-content-end">
-                <button class="btn btn-dark btn-lg ms-auto fs-3" onclick="triggerSubmit()">LANJUT</button>
+                <button class="btn btn-dark btn-lg ms-auto fs-3" wire:click='submitInput'>SIMPAN</button>
             </div>
         </div>
     </footer>
@@ -459,7 +463,7 @@
                     data: 'defect_area',
                 },
                 {
-                    data: 'status',
+                    data: 'defect_status',
                 },
                 {
                     data: 'gambar',
@@ -539,13 +543,13 @@
                     data: 'output',
                 },
                 {
-                    data: 'defect_type',
+                    data: 'reject_type',
                 },
                 {
-                    data: 'defect_area',
+                    data: 'reject_area',
                 },
                 {
-                    data: 'status',
+                    data: 'reject_status',
                 },
                 {
                     data: 'gambar',
@@ -572,7 +576,7 @@
                 {
                     targets: [11],
                     render: (data, type, row, meta) => {
-                        return `<button class="btn btn-dark" onclick="onShowDefectAreaImage('` + row.gambar + `', ` + row.defect_area_x + `, ` + row.defect_area_y + `)"><i class="fa fa-image"></i></button>`
+                        return `<button class="btn btn-dark" onclick="onShowDefectAreaImage('` + row.gambar + `', ` + row.reject_area_x + `, ` + row.reject_area_y + `)"><i class="fa fa-image"></i></button>`
                     }
                 }
             ]

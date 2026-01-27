@@ -46,24 +46,24 @@
                     </div>
                 </div>
                 <div class="card-body">
-                    <div>
+                    <div wire:ignore>
                         <div class="d-flex justify-content-between align-items-end">
                             <div class="d-flex align-items-end gap-3 mb-3">
                                 <div>
                                     <label class="form-label">From</label>
-                                    <input type="date" class="form-control" value="{{ date("Y-m-d", strtotime("-7 days")) }}" id="dateFrom" wire:model="secondaryInOutFrom" onchange="secondaryInOutReload()">
+                                    <input type="date" class="form-control" value="{{ date("Y-m-d", strtotime("-7 days")) }}" id="dateFrom" onchange="secondaryInOutReload()">
                                 </div>
                                 <span class="mb-2">-</span>
                                 <div>
                                     <label class="form-label">To</label>
-                                    <input type="date" class="form-control" value="{{ date("Y-m-d") }}" id="dateTo" wire:model="secondaryInOutTo" onchange="secondaryInOutReload()">
+                                    <input type="date" class="form-control" value="{{ date("Y-m-d") }}" id="dateTo" onchange="secondaryInOutReload()">
                                 </div>
                             </div>
-                            <div class="mb-3" wire:ignore>
+                            <div class="mb-3">
                                 <button class="btn btn-success" onclick="exportExcel(this)"><i class="fa fa-file-excel"></i> Export</button>
                             </div>
                         </div>
-                        <div class="table-responsive" wire:ignore>
+                        <div class="table-responsive">
                             <table class="table table-bordered w-100" id="secondary-in-out-table">
                                 <thead>
                                     <tr>
@@ -102,7 +102,7 @@
                             </div>
                         </div>
                         <div class="col-md-6">
-                            <div class="d-flex mb-3 gap-1">
+                            <div class="d-flex justify-content-center mb-3 gap-1">
                                 <div class="w-auto">
                                     <label class="form-label fw-bold">RFT</label>
                                     <input type="text" class="form-control" id="secondaryInOutDetailRft" readonly>
@@ -319,28 +319,7 @@
             });
         }
 
-        function defectInCheck(element) {
-            Livewire.emit("loadingStart");
-
-            if (element.checked) {
-                @this.addDefectInSelectedList(element.value);
-            } else {
-                @this.removeDefectInSelectedList(element.value);
-                element.removeAttribute("checked");
-            }
-        }
-
-        function defectOutCheck(element) {
-            Livewire.emit("loadingStart");
-
-            if (element.checked) {
-                @this.addDefectOutSelectedList(element.value);
-            } else {
-                @this.removeDefectOutSelectedList(element.value);
-                element.removeAttribute("checked");
-            }
-        }
-
+        // Show Defect Position
         function onShowDefectAreaImage(defectAreaImage, x, y) {
             Livewire.emit('showDefectAreaImage', defectAreaImage, x, y);
         }
@@ -387,6 +366,7 @@
             Livewire.emit('hideDefectAreaImageClear');
         }
 
+        // Secondary IN OUT
         let secondaryInOutDatatable = $("#secondary-in-out-table").DataTable({
             serverSide: true,
             processing: true,
@@ -439,6 +419,7 @@
             $("#secondary-in-out-table").DataTable().ajax.reload();
         }
 
+        // Secondary IN OUT Detail
         let secondaryInOutDetailDatatable = $("#secondary-in-out-detail-table").DataTable({
             serverSide: true,
             processing: true,
@@ -559,6 +540,7 @@
             $("#secondary-in-out-modal").modal("show");
         }
 
+        // Export Excel Secondary IN OUT
         function exportExcel(elm) {
             elm.setAttribute('disabled', 'true');
             elm.innerText = "";
