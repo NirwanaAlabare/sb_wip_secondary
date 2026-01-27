@@ -261,6 +261,7 @@
                                         <tr>
                                             <th>Time IN</th>
                                             <th>Time OUT</th>
+                                            <th>QR</th>
                                             <th>Line</th>
                                             <th>No. WS</th>
                                             <th>Style</th>
@@ -815,6 +816,9 @@
                     data: 'time_out',
                 },
                 {
+                    data: 'kode_numbering',
+                },
+                {
                     data: 'sewing_line',
                 },
                 {
@@ -850,7 +854,7 @@
             ],
             columnDefs: [
                 {
-                    targets: [2],
+                    targets: [3],
                     render: (data, type, row, meta) => {
                         return data ? data.replace("_", " ").toUpperCase() : '-';
                     }
@@ -889,7 +893,7 @@
                         if (response) {
                             $("#secondaryInOutDetailIn").val(response.secondaryIn);
                             $("#secondaryInOutDetailProcess").val(response.secondaryProcess);
-                            $("#secondaryInOutDetailRft").val(response.secondaryRft);
+                            $("#secondaryInOutDetailRft").val(response.secondaryRft+response.secondaryRework);
                             $("#secondaryInOutDetailDefect").val(response.secondaryDefect);
                             $("#secondaryInOutDetailReject").val(response.secondaryReject);
                         }

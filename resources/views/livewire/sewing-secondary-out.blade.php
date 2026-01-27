@@ -583,6 +583,9 @@
                     data: 'time_out',
                 },
                 {
+                    data: 'kode_numbering',
+                },
+                {
                     data: 'sewing_line',
                 },
                 {
