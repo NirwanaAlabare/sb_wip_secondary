@@ -222,7 +222,7 @@ class SecondaryInController extends Controller
         $secondary = $request->secondary ? $request->secondary : '';
 
         $secondaryInOutDaily = SewingSecondaryIn::selectRaw("
-                DATE(output_secondary_in.created_at) tanggal,
+                DATE(output_secondary_in.updated_at) tanggal,
                 COUNT(output_secondary_in.id) total_in,
                 SUM(CASE WHEN output_secondary_out.status = 'rft' OR output_secondary_out.status = 'rework' THEN 1 ELSE 0 END) total_rft,
                 SUM(CASE WHEN output_secondary_out.status = 'defect' THEN 1 ELSE 0 END) total_defect,
@@ -233,8 +233,8 @@ class SecondaryInController extends Controller
             leftJoin("output_secondary_master", "output_secondary_master.id", "=", "output_secondary_in.secondary_id")->
             leftJoin("output_rfts", "output_rfts.id", "=", "output_secondary_in.rft_id")->
             where("output_secondary_master.id", $secondary)->
-            whereBetween("output_secondary_in.created_at", [$dateFrom." 00:00:00", $dateTo." 23:59:59"])->
-            groupByRaw("DATE(output_secondary_in.created_at)")->
+            whereBetween("output_secondary_in.updated_at", [$dateFrom." 00:00:00", $dateTo." 23:59:59"])->
+            groupByRaw("DATE(output_secondary_in.updated_at)")->
             get();
 
         return DataTables::of($secondaryInOutDaily)->toJson();
@@ -242,8 +242,8 @@ class SecondaryInController extends Controller
 
     public function getSecondaryInOutDetail(Request $request) {
         $secondaryInOutQuery = SewingSecondaryIn::selectRaw("
-                output_secondary_in.created_at time_in,
-                output_secondary_out.created_at time_out,
+                output_secondary_in.updated_at time_in,
+                output_secondary_out.updated_at time_out,
                 userpassword.username sewing_line,
                 output_secondary_in.kode_numbering,
                 act_costing.kpno no_ws,
@@ -277,7 +277,7 @@ class SecondaryInController extends Controller
             // Conditional
             whereRaw("
                 (
-                    output_secondary_in.created_at between '".$request->tanggal." 00:00:00' and '".$request->tanggal." 23:59:59'
+                    output_secondary_in.updated_at between '".$request->tanggal." 00:00:00' and '".$request->tanggal." 23:59:59'
                 )
             ")->
             whereRaw("
@@ -295,8 +295,8 @@ class SecondaryInController extends Controller
 
     public function getSecondaryInOutDetailTotal(Request $request) {
         $secondaryInOutQuery = SewingSecondaryIn::selectRaw("
-                output_secondary_in.created_at time_in,
-                output_secondary_out.created_at time_out,
+                output_secondary_in.updated_at time_in,
+                output_secondary_out.updated_at time_out,
                 userpassword.username sewing_line,
                 output_secondary_in.kode_numbering,
                 act_costing.kpno no_ws,
@@ -330,7 +330,7 @@ class SecondaryInController extends Controller
             // Conditional
             whereRaw("
                 (
-                    output_secondary_in.created_at between '".$request->tanggal." 00:00:00' and '".$request->tanggal." 23:59:59'
+                    output_secondary_in.updated_at between '".$request->tanggal." 00:00:00' and '".$request->tanggal." 23:59:59'
                 )
             ")->
             whereRaw("

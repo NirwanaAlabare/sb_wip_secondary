@@ -39,7 +39,7 @@
                     </div>
                 </div>
                 <div class="card-body">
-                    <div class="row mb-3">
+                    <div class="row mb-3" wire:ignore>
                         <div class="col-md-12">
                             <div class="d-flex justify-content-end">
                                 <div>
@@ -49,7 +49,7 @@
                             </div>
                         </div>
                         <div class="col-md-12">
-                            <div class="row g-3" wire:ignore>
+                            <div class="row g-3">
                                 <div class="col-md-4">
                                     <label class="form-label fw-bold">Line</label>
                                     <select class="form-control select2" id="sewingLine" name="sewingLine">
@@ -95,7 +95,7 @@
                             </div>
                         </div>
                     </div>
-                    <button class="btn btn-defect btn-block w-100" onclick="submitSecondaryIn()">SIMPAN</button>
+                    <button class="btn btn-defect btn-block w-100" onclick="submitSecondaryIn()" wire:ignore>SIMPAN</button>
                     <div class="table-responsive mt-3" wire:ignore>
                         <table class="table w-100" id="secondary-in-list-table">
                             <thead>
@@ -164,24 +164,24 @@
                     </div>
                 </div>
                 <div class="card-body">
-                    <div>
+                    <div wire:ignore>
                         <div class="d-flex justify-content-between align-items-end">
                             <div class="d-flex align-items-end gap-3 mb-3">
                                 <div>
                                     <label class="form-label">From</label>
-                                    <input type="date" class="form-control" value="{{ date("Y-m-d", strtotime("-7 days")) }}" id="dateFrom" wire:model="secondaryInOutFrom" onchange="secondaryInOutReload()">
+                                    <input type="date" class="form-control" value="{{ date("Y-m-d", strtotime("-7 days")) }}" id="dateFrom" onchange="secondaryInOutReload()">
                                 </div>
                                 <span class="mb-2">-</span>
                                 <div>
                                     <label class="form-label">To</label>
-                                    <input type="date" class="form-control" value="{{ date("Y-m-d") }}" id="dateTo" wire:model="secondaryInOutTo" onchange="secondaryInOutReload()">
+                                    <input type="date" class="form-control" value="{{ date("Y-m-d") }}" id="dateTo" onchange="secondaryInOutReload()">
                                 </div>
                             </div>
-                            <div class="mb-3" wire:ignore>
+                            <div class="mb-3">
                                 <button class="btn btn-success" onclick="exportExcel(this)"><i class="fa fa-file-excel"></i> Export</button>
                             </div>
                         </div>
-                        <div class="table-responsive" wire:ignore>
+                        <div class="table-responsive">
                             <table class="table table-bordered w-100" id="secondary-in-out-table">
                                 <thead>
                                     <tr>
