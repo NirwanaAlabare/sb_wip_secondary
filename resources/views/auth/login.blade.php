@@ -7,7 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}" />
     <link rel="icon" type="image/x-icon" href=" {{ asset('images/secondary.ico') }}">
-    <title>NDS DEFECT</title>
+    <title>QR SEWING SECONDARY</title>
 
     @include('layouts.link')
 </head>
@@ -19,7 +19,7 @@
                 <div class="col-md-6">
                     <div class="d-flex flex-column justify-content-center align-items-center">
                         <img src="{{ asset('images/Frame 1.png') }}" class="img-fluid mt-auto mb-auto" alt="...">
-                        <p class="fs-5 mt-3 w-75 mb-0 bg-defect text-light text-center rounded-3">SEWING SECONDARY</p>
+                        <p class="fs-5 mt-3 w-75 mb-0 bg-defect text-light text-center rounded-3">SEWING SECONDARY QR</p>
                     </div>
                 </div>
                 <div class="col-md-6">

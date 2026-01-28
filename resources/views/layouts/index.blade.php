@@ -14,7 +14,7 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <meta name="csrf-token" content="{{ csrf_token() }}" />
     <link rel="icon" type="image/x-icon" href=" {{ asset('images/secondary.ico') }}">
-    <title>SEWING SECONDARY {{ $mode ?? '' }}</title>
+    <title>QR {{ $mode ?? '' }} SEWING SECONDARY</title>
 
     @include('layouts.link')
 
