@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 use Yajra\DataTables\Facades\DataTables;
 use Carbon\Carbon;
+use \avadim\FastExcelLaravel\Excel as FastExcel;
 use DB;
 
 class SecondaryInController extends Controller
