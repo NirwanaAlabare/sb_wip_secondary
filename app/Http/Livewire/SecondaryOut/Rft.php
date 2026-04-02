@@ -150,10 +150,10 @@ class Rft extends Component
                 // Check Secondary IN
                 $secondaryInData = SewingSecondaryIn::where("kode_numbering", $numberingInput)->first();
 
-                // Stored Secondary IN Data
-                $scannedDetail = $secondaryInData->rft;
-
                 if ($secondaryInData) {
+                    
+                    // Stored Secondary IN Data
+                    $scannedDetail = $secondaryInData->rft;
 
                     if ($secondaryInData->secondary_id == $this->selectedSecondary) {
                         $insertRft = SewingSecondaryOut::create([
