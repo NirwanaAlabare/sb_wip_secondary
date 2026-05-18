@@ -449,7 +449,7 @@ class SecondaryInController extends Controller
                     AND output_secondary_out.id is null
                     AND output_rfts.master_plan_id is not null
                     AND output_secondary_in.kode_numbering is not null
-                    AND output_secondary_in.updated_at >= '".date("Y-m-d H:i:s", strtotime("-7 day"))."'
+                    AND output_secondary_in.updated_at >= '".date("Y-m-d H:i:s", strtotime("-7 day"))." 00:00:00'
                     AND output_secondary_master.id = '".$request->selectedSecondary."'
                     ".$secondaryInSearch."
                     ".$secondaryInFilterKode."
