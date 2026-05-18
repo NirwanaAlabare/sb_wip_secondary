@@ -60,7 +60,6 @@
                         @endif
                     </tbody>
                 </table>
-                {{ $latestSecondaryInOuts->links() }}
             </div>
         </div>
     </div>
