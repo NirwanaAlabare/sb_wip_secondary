@@ -413,7 +413,7 @@ class SecondaryInController extends Controller
 
         $secondaryInFilterWaktu = "";
         if ($request->secondaryInFilterWaktu) {
-            $secondaryInFilterWaktu = " AND COALESCE(output_secondary_in.updated_at, output_secondary_in.created_at) LIKE '%".$request->secondaryInFilterWaktu."%' ";
+            $secondaryInFilterWaktu = " AND output_secondary_in.updated_at LIKE '%".$request->secondaryInFilterWaktu."%' ";
         }
 
         $secondaryInList = collect(
@@ -541,7 +541,7 @@ class SecondaryInController extends Controller
 
         $secondaryInFilterWaktu = "";
         if ($request->secondaryInFilterWaktu) {
-            $secondaryInFilterWaktu = " AND COALESCE(output_secondary_in.updated_at, output_secondary_in.created_at) LIKE '%".$request->secondaryInFilterWaktu."%' ";
+            $secondaryInFilterWaktu = " AND output_secondary_in.updated_at LIKE '%".$request->secondaryInFilterWaktu."%' ";
         }
 
         $secondaryInList = collect(

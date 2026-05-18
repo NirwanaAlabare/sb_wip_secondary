@@ -139,9 +139,9 @@ class SewingSecondaryOut extends Component
             leftJoin("output_rfts", "output_rfts.id", "=", "output_secondary_in.rft_id")->
             leftJoin("output_secondary_master", "output_secondary_master.id", "=", "output_secondary_in.secondary_id")->
             leftJoin("output_secondary_out", "output_secondary_out.secondary_in_id", "=", "output_secondary_in.id")->
-            whereBetween(DB::raw("COALESCE(output_secondary_out.updated_at, output_secondary_out.created_at)"), [$this->secondaryInOutFrom." 00:00:00", $this->secondaryInOutTo." 23:59:59"])->
+            whereBetween("output_secondary_out.updated_at", [$this->secondaryInOutFrom." 00:00:00", $this->secondaryInOutTo." 23:59:59"])->
             where("output_secondary_master.id", $this->selectedSecondary)->
-            groupByRaw("DATE(COALESCE(output_secondary_out.updated_at, output_secondary_out.created_at))")->
+            groupByRaw("DATE(output_secondary_out.updated_at)")->
             get();
 
         $secondaryInOutTotal = $secondaryInOutDaily ? $secondaryInOutDaily->sum("total_in") : 0;

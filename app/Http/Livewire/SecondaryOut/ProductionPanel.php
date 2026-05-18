@@ -174,10 +174,12 @@ class ProductionPanel extends Component
     public function render(SessionManager $session)
     {
         // Get total output
-        $data = DB::connection('mysql_sb')->table('output_secondary_out')->selectRaw('output_secondary_out.*, output_secondary_in.secondary_id')->leftJoin('output_secondary_in', 'output_secondary_in.id', '=', 'output_secondary_out.secondary_in_id')->whereRaw("COALESCE(output_secondary_out.updated_at, output_secondary_out.created_at) between '".$this->date." 00:00:00' and '".$this->date." 23:59:59'")->get();
+        $data = DB::connection('mysql_sb')->table('output_secondary_out')->selectRaw('output_secondary_out.*, output_secondary_in.secondary_id')->leftJoin('output_secondary_in', 'output_secondary_in.id', '=', 'output_secondary_out.secondary_in_id')->whereRaw("output_secondary_out.updated_at between '".$this->date." 00:00:00' and '".$this->date." 23:59:59'")->get();
 
-        $this->inWip = DB::table("output_secondary_in")->leftJoin("output_secondary_out", "output_secondary_out.secondary_in_id", "=", "output_secondary_in.id")->whereNull("output_secondary_out.id")->where("secondary_id", $this->selectedSecondary)->count();
-        $this->outDefect = DB::table("output_secondary_out")->leftJoin("output_secondary_in", "output_secondary_in.id", "=", "output_secondary_out.secondary_in_id")->where("output_secondary_out.status", "defect")->where("secondary_id", $this->selectedSecondary)->count();
+        $inWipQuery = DB::select("SELECT COUNT(output_secondary_in.id) as count FROM output_secondary_in LEFT JOIN output_secondary_out ON output_secondary_out.secondary_in_id = output_secondary_in.id WHERE output_secondary_out.id IS NULL AND secondary_id = ?", [$this->selectedSecondary]);
+        $this->inWip = $inWipQuery && $inWipQuery[0] ? $inWipQuery[0]->count : 0; 
+        $outDefectQuery = DB::select("SELECT COUNT(output_secondary_out.id) as count FROM output_secondary_out LEFT JOIN output_secondary_in ON output_secondary_in.id = output_secondary_out.secondary_in_id WHERE output_secondary_out.status = 'defect' AND secondary_id = ?", [$this->selectedSecondary]);
+        $this->outDefect = $outDefectQuery && $outDefectQuery[0] ? $outDefectQuery[0]->count : 0;
 
         $this->outputRft = $data->where('status', 'rft')->where('secondary_id', $this->selectedSecondary)->count();
         $this->outputDefect = $data->where('status', 'defect')->where('secondary_id', $this->selectedSecondary)->count();
