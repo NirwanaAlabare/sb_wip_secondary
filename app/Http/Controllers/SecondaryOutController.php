@@ -413,7 +413,7 @@ class SecondaryOutController extends Controller
 
         $secondaryOutFilterWaktu = "";
         if ($request->secondaryOutFilterWaktu) {
-            $secondaryOutFilterWaktu = " AND COALESCE(output_secondary_in.updated_at, output_secondary_in.created_at) LIKE '%".$request->secondaryOutFilterWaktu."%' ";
+            $secondaryOutFilterWaktu = " AND output_secondary_in.updated_at LIKE '%".$request->secondaryOutFilterWaktu."%' ";
         }
 
         $secondaryOutList = collect(
@@ -501,7 +501,7 @@ class SecondaryOutController extends Controller
                 output_secondary_out.created_by_username,
                 UPPER(output_secondary_out_defect.status) defect_status,
                 UPPER(output_secondary_out_reject.status) reject_status,
-                COALESCE(output_secondary_out.updated_at, output_secondary_out.created_at) as secondary_out_time,
+                output_secondary_out.updated_at as secondary_out_time,
                 master_plan.gambar
             from
                 `output_secondary_out`
@@ -521,7 +521,7 @@ class SecondaryOutController extends Controller
                 left join `act_costing` on `act_costing`.`id` = `so`.`id_cost`
                 left join `master_plan` on `master_plan`.`id` = `output_rfts`.`master_plan_id`
             where
-                COALESCE(output_secondary_out.updated_at, output_secondary_out.created_at) between '".$date." 00:00:00' and '".$date." 23:59:59'
+                output_secondary_out.updated_at between '".$date." 00:00:00' and '".$date." 23:59:59'
                 ".($status ? " and output_secondary_out.status = '".$status."' " : "")."
                 ".($selectedSecondary ? " and output_secondary_in.secondary_id = '".$selectedSecondary."' " : "")."
             group by
@@ -583,7 +583,7 @@ class SecondaryOutController extends Controller
                 left join `so` on `so`.`id` = `so_det`.`id_so`
                 left join `act_costing` on `act_costing`.`id` = `so`.`id_cost`
             where
-                COALESCE(output_secondary_out.updated_at, output_secondary_out.created_at) between '".$date." 00:00:00' and '".$date." 23:59:59'
+                output_secondary_out.updated_at between '".$date." 00:00:00' and '".$date." 23:59:59'
                 ".($selectedSecondary ? " and output_secondary_in.secondary_id = '".$selectedSecondary."' " : "")."
             group by
                 master_plan.id,

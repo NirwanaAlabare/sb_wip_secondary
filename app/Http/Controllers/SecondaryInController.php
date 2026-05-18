@@ -414,7 +414,7 @@ class SecondaryInController extends Controller
 
         $secondaryInFilterWaktu = "";
         if ($request->secondaryInFilterWaktu) {
-            $secondaryInFilterWaktu = " AND COALESCE(output_secondary_in.updated_at, output_secondary_in.created_at) LIKE '%".$request->secondaryInFilterWaktu."%' ";
+            $secondaryInFilterWaktu = " AND output_secondary_in.updated_at LIKE '%".$request->secondaryInFilterWaktu."%' ";
         }
 
         $secondaryInList = collect(
@@ -449,7 +449,7 @@ class SecondaryInController extends Controller
                     AND output_secondary_out.id is null
                     AND output_rfts.master_plan_id is not null
                     AND output_secondary_in.kode_numbering is not null
-                    AND output_secondary_in.updated_at >= '2025-12-01 00:00:00'
+                    AND output_secondary_in.updated_at >= '".date("Y-m-d H:i:s", strtotime("-7 day"))."'
                     AND output_secondary_master.id = '".$request->selectedSecondary."'
                     ".$secondaryInSearch."
                     ".$secondaryInFilterKode."
