@@ -1,6 +1,8 @@
 document.addEventListener("DOMContentLoaded", () => {
     $.fn.modal.Constructor.prototype._enforceFocus = function() {};
 
+    $.fn.dataTable.ext.errMode = 'none';
+
     showDate();
     showTime();
 
