@@ -242,6 +242,8 @@ class SecondaryInController extends Controller
     }
 
     public function getSecondaryInOutDetail(Request $request) {
+        $tanggal = $request->tanggal ? $request->tanggal : date("Y-m-d");
+        
         $secondaryInOutQuery = SewingSecondaryIn::selectRaw("
                 output_secondary_in.updated_at time_in,
                 output_secondary_out.updated_at time_out,
@@ -278,7 +280,7 @@ class SecondaryInController extends Controller
             // Conditional
             whereRaw("
                 (
-                    output_secondary_in.updated_at between '".$request->tanggal." 00:00:00' and '".$request->tanggal." 23:59:59'
+                    output_secondary_in.updated_at between '".$tanggal." 00:00:00' and '".$tanggal." 23:59:59'
                 )
             ")->
             whereRaw("
@@ -295,6 +297,8 @@ class SecondaryInController extends Controller
     }
 
     public function getSecondaryInOutDetailTotal(Request $request) {
+        $tanggal = $request->tanggal ? $request->tanggal : date("Y-m-d");
+        
         $secondaryInOutQuery = SewingSecondaryIn::selectRaw("
                 output_secondary_in.updated_at time_in,
                 output_secondary_out.updated_at time_out,
@@ -331,7 +335,7 @@ class SecondaryInController extends Controller
             // Conditional
             whereRaw("
                 (
-                    output_secondary_in.updated_at between '".$request->tanggal." 00:00:00' and '".$request->tanggal." 23:59:59'
+                    output_secondary_in.updated_at between '".$tanggal." 00:00:00' and '".$tanggal." 23:59:59'
                 )
             ")->
             whereRaw("
