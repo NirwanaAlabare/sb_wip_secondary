@@ -866,7 +866,7 @@
                     var blob = new Blob([res]);
                     var link = document.createElement('a');
                     link.href = window.URL.createObjectURL(blob);
-                    link.download = "Secondary In Out " + $("#selectedSecondary").val() + " " + $("#dateFrom").val() + " - " + $("#dateTo").val() + ".xlsx";
+                    link.download = "Secondary In Out " + $("#selectedSecondary option:selected").html() + " " + $("#dateFrom").val() + " - " + $("#dateTo").val() + ".xlsx";
                     link.click();
                 }, error: function (jqXHR) {
                     elm.removeAttribute('disabled');

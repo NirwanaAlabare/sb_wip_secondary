@@ -570,7 +570,8 @@ class SecondaryInController extends Controller
                 COALESCE(output_secondary_out_defect.defect_area_y, output_secondary_out_reject.defect_area_y) defect_area_y,
                 (CASE WHEN output_secondary_out.id IS NOT NULL THEN UPPER(output_secondary_out.status) ELSE 'WIP' END) as status,
                 output_secondary_in.created_by_username user_in,
-                output_secondary_out.created_by_username user_out
+                output_secondary_out.created_by_username user_out,
+                output_secondary_master.secondary
             ")->
             leftJoin("output_secondary_out", "output_secondary_out.secondary_in_id", "=", "output_secondary_in.id")->
             leftJoin("output_secondary_out_defect", "output_secondary_out_defect.secondary_out_id", "=", "output_secondary_out.id")->
@@ -617,10 +618,11 @@ class SecondaryInController extends Controller
         $sheet->writeTo('G1', 'Color')->applyFontStyleBold()->applyBorder(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
         $sheet->writeTo('H1', 'Size')->applyFontStyleBold()->applyBorder(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
         $sheet->writeTo('I1', 'Status')->applyFontStyleBold()->applyBorder(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
-        $sheet->writeTo('J1', 'Type')->applyFontStyleBold()->applyBorder(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
-        $sheet->writeTo('K1', 'Area')->applyFontStyleBold()->applyBorder(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
-        $sheet->writeTo('L1', 'IN By')->applyFontStyleBold()->applyBorder(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
-        $sheet->writeTo('M1', 'OUT By')->applyFontStyleBold()->applyBorder(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
+        $sheet->writeTo('J1', 'Secondary')->applyFontStyleBold()->applyBorder(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
+        $sheet->writeTo('K1', 'Type')->applyFontStyleBold()->applyBorder(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
+        $sheet->writeTo('L1', 'Area')->applyFontStyleBold()->applyBorder(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
+        $sheet->writeTo('M1', 'IN By')->applyFontStyleBold()->applyBorder(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
+        $sheet->writeTo('N1', 'OUT By')->applyFontStyleBold()->applyBorder(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
 
         collect($data)->chunk(1000)->each(function ($rows) use ($sheet) {
             $sheet->writeAreas();
@@ -636,6 +638,7 @@ class SecondaryInController extends Controller
                     $row->color ?? "-",
                     $row->size ?? "-",
                     $row->status ?? "-",
+                    $row->secondary ?? "-",
                     $row->defect_type ?? "-",
                     $row->defect_area ?? "-",
                     $row->user_in ?? "-",
