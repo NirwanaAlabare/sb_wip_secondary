@@ -314,6 +314,8 @@
                 let selectedSecondary = $('#selectedSecondary').val();
                 let selectedSecondaryText = $('#selectedSecondary').find('option:selected').text();
 
+                localStorage.setItem('selectedSecondary', selectedSecondary);
+
                 @this.set('selectedSecondary', selectedSecondary);
                 @this.set('selectedSecondaryText', selectedSecondaryText);
 
@@ -353,6 +355,12 @@
             $('#button-in-out').on('click', async function (e) {
                 @this.changeMode("sum")
             })
+
+            // Restore last selected secondary
+            let savedSecondary = localStorage.getItem('selectedSecondary');
+            if (savedSecondary && $('#selectedSecondary option[value="' + savedSecondary + '"]').length) {
+                $('#selectedSecondary').val(savedSecondary);
+            }
 
             $('#selectedSecondary').trigger('change');
         });
